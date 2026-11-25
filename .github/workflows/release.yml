@@ -1,0 +1,211 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release-windows:
+    name: Build & Publish Windows Release (x64 MSVC)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Rust stable toolchain (MSVC)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Run disk-core unit tests
+        run: cargo test -p disk-core
+
+      - name: Build Tauri NSIS installer
+        run: npm run tauri build -- --bundles nsis
+
+      - name: Package installer, portable ZIP, and SHA256SUMS
+        id: package
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $tauriConf = Get-Content -Raw 'src-tauri/tauri.conf.json' | ConvertFrom-Json
+          $appVersion = $tauriConf.version
+          $isVersionTag = $env:GITHUB_REF.StartsWith('refs/tags/v')
+
+          $nsisDir = 'target/release/bundle/nsis'
+          $expectedInstaller = Join-Path $nsisDir "DiskCleanupTool_${appVersion}_x64-setup.exe"
+          if (Test-Path $expectedInstaller) {
+            $installerFile = Get-Item $expectedInstaller
+          } else {
+            $installerFile = Get-ChildItem -Path $nsisDir -Filter 'DiskCleanupTool_*_x64-setup.exe' | Select-Object -First 1
+          }
+          if (-not $installerFile) {
+            throw "NSIS installer not found in $nsisDir"
+          }
+
+          $exePath = 'target/release/DiskCleanupTool.exe'
+          if (-not (Test-Path $exePath)) {
+            throw "Release binary not found at $exePath"
+          }
+
+          $stagingDir = 'release-assets'
+          $portableDir = 'portable-staging'
+          if (Test-Path $stagingDir) { Remove-Item -Recurse -Force $stagingDir }
+          if (Test-Path $portableDir) { Remove-Item -Recurse -Force $portableDir }
+          New-Item -ItemType Directory -Path $stagingDir, $portableDir | Out-Null
+
+          # Copy versioned NSIS installer
+          $versionedInstallerPath = Join-Path $stagingDir $installerFile.Name
+          Copy-Item -Path $installerFile.FullName -Destination $versionedInstallerPath -Force
+
+          # Build portable ZIP
+          Copy-Item -Path $exePath -Destination $portableDir -Force
+          Copy-Item -Path 'README.md' -Destination $portableDir -Force
+          Copy-Item -Path 'LICENSE' -Destination $portableDir -Force
+          if (Test-Path 'target/release/WebView2Loader.dll') {
+            Copy-Item -Path 'target/release/WebView2Loader.dll' -Destination $portableDir -Force
+          }
+          $portableZipPath = Join-Path $stagingDir 'DiskCleanupTool-x64-portable.zip'
+          Compress-Archive -Path "$portableDir/*" -DestinationPath $portableZipPath -Force
+
+          # For rolling main/workflow_dispatch builds, also provide stable 'latest' filenames
+          if (-not $isVersionTag) {
+            Copy-Item -Path $versionedInstallerPath -Destination (Join-Path $stagingDir 'DiskCleanupTool-latest-x64-setup.exe') -Force
+            Copy-Item -Path $portableZipPath -Destination (Join-Path $stagingDir 'DiskCleanupTool-latest-portable.zip') -Force
+          }
+
+          # Generate SHA256SUMS.txt
+          $checksumLines = Get-ChildItem -Path $stagingDir -File |
+            Where-Object { $_.Name -ne 'SHA256SUMS.txt' } |
+            Sort-Object Name |
+            ForEach-Object {
+              $hash = (Get-FileHash -Path $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+              "$hash  $($_.Name)"
+            }
+          $checksumPath = Join-Path $stagingDir 'SHA256SUMS.txt'
+          Set-Content -Path $checksumPath -Value ($checksumLines -join "`n") -Encoding utf8NoBOM
+
+          Write-Host "Packaged assets:"
+          Get-ChildItem -Path $stagingDir | Format-Table Name, Length -AutoSize
+          Write-Host "`nSHA256SUMS.txt:"
+          Get-Content $checksumPath
+
+          "app_version=$appVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "installer_name=$($installerFile.Name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Upload GitHub Actions release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: DiskCleanupTool-windows-x64-${{ steps.package.outputs.app_version }}-${{ github.run_number }}
+          path: release-assets/*
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Publish official GitHub Release (version tag)
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag = $env:GITHUB_REF_NAME
+          $assets = @(Get-ChildItem -Path 'release-assets' -File | ForEach-Object { $_.FullName })
+
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag @assets --clobber
+            if ($LASTEXITCODE -ne 0) { throw "Failed to upload assets to release $tag" }
+            gh release edit $tag --latest
+            if ($LASTEXITCODE -ne 0) { throw "Failed to mark release $tag as latest" }
+          } else {
+            gh release create $tag @assets `
+              --title "DiskCleanupTool $tag" `
+              --latest `
+              --generate-notes
+            if ($LASTEXITCODE -ne 0) { throw "Failed to create release $tag" }
+          }
+
+      - name: Publish rolling 'latest' GitHub Release (main / workflow_dispatch)
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag = 'latest'
+          $shortSha = $env:GITHUB_SHA.Substring(0, 7)
+          $timestamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-dd HH:mm:ss UTC')
+          $appVersion = '${{ steps.package.outputs.app_version }}'
+          $installerName = '${{ steps.package.outputs.installer_name }}'
+          $checksums = Get-Content -Raw 'release-assets/SHA256SUMS.txt'
+
+          $notes = @"
+          ## DiskCleanupTool Latest Build (v$appVersion)
+
+          Rolling build published automatically from ``main``.
+
+          - **Commit:** ``$env:GITHUB_SHA`` (``$shortSha``)
+          - **Built at:** $timestamp
+          - **Workflow run:** https://github.com/$($env:GITHUB_REPOSITORY)/actions/runs/$($env:GITHUB_RUN_ID)
+
+          ### Downloads
+          - **Windows Installer (NSIS, permanent URL):** ``DiskCleanupTool-latest-x64-setup.exe`` (also ``$installerName``)
+          - **Portable ZIP (permanent URL):** ``DiskCleanupTool-latest-portable.zip`` (also ``DiskCleanupTool-x64-portable.zip``)
+
+          ### SHA-256 Checksums
+          ``````text
+          $($checksums.Trim())
+          ``````
+          "@
+          Set-Content -Path 'release-notes.md' -Value $notes -Encoding utf8NoBOM
+
+          # Move rolling 'latest' tag to current commit
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git tag -f $tag $env:GITHUB_SHA
+          git push -f origin "refs/tags/$tag"
+          if ($LASTEXITCODE -ne 0) { throw "Failed to update git tag '$tag'" }
+
+          $assets = @(Get-ChildItem -Path 'release-assets' -File | ForEach-Object { $_.FullName })
+
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag @assets --clobber
+            if ($LASTEXITCODE -ne 0) { throw "Failed to upload assets to rolling release '$tag'" }
+            gh release edit $tag `
+              --title "DiskCleanupTool Latest (v$appVersion - $shortSha)" `
+              --notes-file 'release-notes.md' `
+              --latest
+            if ($LASTEXITCODE -ne 0) { throw "Failed to update rolling release '$tag'" }
+          } else {
+            gh release create $tag @assets `
+              --title "DiskCleanupTool Latest (v$appVersion - $shortSha)" `
+              --notes-file 'release-notes.md' `
+              --latest
+            if ($LASTEXITCODE -ne 0) { throw "Failed to create rolling release '$tag'" }
+          }

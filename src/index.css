@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+:root {
+  --bg-app: #0d1117;
+  --bg-panel: #141922;
+  --bg-elevated: #1b222d;
+  --bg-hover: #212a38;
+  --bg-selected: rgba(56, 189, 248, 0.11);
+  --border-subtle: #252e3d;
+  --border-strong: #344156;
+  --text-primary: #e6edf3;
+  --text-secondary: #9aa7b8;
+  --text-muted: #6c798c;
+  --accent: #38bdf8;
+  --accent-strong: #0ea5e9;
+  --success: #34d399;
+  --warning: #f59e0b;
+  --danger: #f87171;
+  --bar-track: #1f2937;
+}
+
+html.light {
+  --bg-app: #f4f6f9;
+  --bg-panel: #ffffff;
+  --bg-elevated: #f8fafc;
+  --bg-hover: #eef2f7;
+  --bg-selected: rgba(14, 165, 233, 0.10);
+  --border-subtle: #dfe5ee;
+  --border-strong: #c5d0df;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --accent: #0284c7;
+  --accent-strong: #0369a1;
+  --success: #059669;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --bar-track: #e2e8f0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  font-family: "IBM Plex Sans", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  overflow: hidden;
+  user-select: none;
+}
+
+.font-mono-num {
+  font-family: "IBM Plex Mono", "Cascadia Mono", Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}

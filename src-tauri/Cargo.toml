@@ -1,0 +1,38 @@
+[package]
+name = "disk-cleanup-tool"
+version = "0.2.0"
+edition = "2021"
+license = "MIT"
+description = "Fast Windows disk space analyzer and safe cleanup tool"
+
+[[bin]]
+name = "DiskCleanupTool"
+path = "src/main.rs"
+
+[lib]
+name = "disk_cleanup_tool_lib"
+crate-type = ["rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+disk-core = { path = "../crates/disk-core" }
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-single-instance = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_Storage_FileSystem",
+    "Win32_System_Com",
+    "Win32_System_Registry",
+    "Win32_Security",
+    "Win32_System_Threading",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+] }

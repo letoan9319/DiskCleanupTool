@@ -1,0 +1,216 @@
+name: Audit Bot
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: audit-bot-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    name: Security, Lint & Hygiene Audit
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Rust stable toolchain with Clippy
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@cargo-audit
+
+      - name: Install frontend dependencies and build dist for Tauri check
+        run: |
+          npm ci
+          npm run build
+
+      - name: Prepare audit output directory and Cargo.lock
+        run: |
+          New-Item -ItemType Directory -Path 'audit-tmp' -Force | Out-Null
+          if (-not (Test-Path 'Cargo.lock')) {
+            cargo generate-lockfile
+          }
+
+      - name: Run cargo audit (JSON)
+        run: |
+          $ErrorActionPreference = 'Continue'
+          cargo audit --json > 'audit-tmp/cargo-audit.json'
+          Write-Host "cargo audit exit code: $LASTEXITCODE"
+          exit 0
+
+      - name: Run npm audit (JSON)
+        run: |
+          $ErrorActionPreference = 'Continue'
+          npm audit --json > 'audit-tmp/npm-audit.json'
+          Write-Host "npm audit exit code: $LASTEXITCODE"
+          exit 0
+
+      - name: Run cargo clippy (JSON)
+        run: |
+          $ErrorActionPreference = 'Continue'
+          cargo clippy --workspace --all-targets --message-format=json > 'audit-tmp/clippy.json'
+          Write-Host "cargo clippy exit code: $LASTEXITCODE"
+          exit 0
+
+      - name: Aggregate audit findings and run Rust hygiene scan
+        run: |
+          node .github/scripts/audit-and-report.mjs `
+            --cargo-audit audit-tmp/cargo-audit.json `
+            --npm-audit audit-tmp/npm-audit.json `
+            --clippy audit-tmp/clippy.json `
+            --out-md audit-report.md `
+            --out-json audit-summary.json
+
+          if (Test-Path 'audit-report.md') {
+            Get-Content -Raw 'audit-report.md' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          }
+
+      - name: Upload audit report artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-report-${{ github.run_number }}
+          path: |
+            audit-report.md
+            audit-summary.json
+          retention-days: 14
+
+      - name: Sync GitHub Issue for audit findings
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('node:fs');
+            const summary = JSON.parse(fs.readFileSync('audit-summary.json', 'utf8'));
+            const reportMd = fs.readFileSync('audit-report.md', 'utf8');
+
+            const { owner, repo } = context.repo;
+            const labelName = 'automated-audit';
+            const shortSha = (context.sha || '').slice(0, 7) || 'unknown';
+
+            // Ensure label exists
+            try {
+              await github.rest.issues.getLabel({ owner, repo, name: labelName });
+            } catch (err) {
+              if (err.status === 404) {
+                await github.rest.issues.createLabel({
+                  owner,
+                  repo,
+                  name: labelName,
+                  color: 'D93F0B',
+                  description: 'Automated security, lint, and code hygiene audit findings',
+                });
+              } else {
+                throw err;
+              }
+            }
+
+            // Find open automated-audit issues
+            const { data: openIssues } = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: 'open',
+              labels: labelName,
+              per_page: 20,
+            });
+            const auditIssues = openIssues.filter((issue) => !issue.pull_request);
+
+            const totalFindings = Number(summary.totalFindings || 0);
+            const desiredTitle = `[Automated Audit] ${totalFindings} finding(s) detected`;
+
+            if (totalFindings > 0) {
+              if (auditIssues.length === 0) {
+                const created = await github.rest.issues.create({
+                  owner,
+                  repo,
+                  title: desiredTitle,
+                  body: reportMd,
+                  labels: [labelName],
+                });
+                core.info(`Created audit issue #${created.data.number} with ${totalFindings} finding(s).`);
+              } else {
+                const primary = auditIssues[0];
+                const fpMatch = (primary.body || '').match(/<!--\s*audit-bot-fingerprint:\s*([a-f0-9]+)\s*-->/);
+                const previousFingerprint = fpMatch ? fpMatch[1] : null;
+
+                if (previousFingerprint !== summary.fingerprint || primary.title !== desiredTitle) {
+                  await github.rest.issues.update({
+                    owner,
+                    repo,
+                    issue_number: primary.number,
+                    title: desiredTitle,
+                    body: reportMd,
+                  });
+                  await github.rest.issues.createComment({
+                    owner,
+                    repo,
+                    issue_number: primary.number,
+                    body: `Audit findings updated at commit \`${shortSha}\`: **${totalFindings}** total finding(s) (Cargo Audit: ${summary.counts.cargoAuditVulnerabilities + summary.counts.cargoAuditWarnings}, npm Audit: ${summary.counts.npmAuditTotal}, Clippy: ${summary.counts.clippyErrors + summary.counts.clippyWarnings}, Hygiene: ${summary.counts.hygieneUnwrap + summary.counts.hygieneTodoFixme}).`,
+                  });
+                  core.info(`Updated existing audit issue #${primary.number}.`);
+                } else {
+                  core.info(`Audit issue #${primary.number} is already up to date (fingerprint ${summary.fingerprint}).`);
+                }
+
+                // Close any duplicate open issues if more than one existed
+                for (const dup of auditIssues.slice(1)) {
+                  await github.rest.issues.createComment({
+                    owner,
+                    repo,
+                    issue_number: dup.number,
+                    body: `Closing duplicate automated audit issue in favor of #${primary.number}.`,
+                  });
+                  await github.rest.issues.update({
+                    owner,
+                    repo,
+                    issue_number: dup.number,
+                    state: 'closed',
+                    state_reason: 'not_planned',
+                  });
+                }
+              }
+            } else if (auditIssues.length > 0) {
+              for (const issue of auditIssues) {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  body: `All automated audit checks passed with **0 findings** as of commit \`${shortSha}\`. Closing this issue automatically.`,
+                });
+                await github.rest.issues.update({
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  state: 'closed',
+                  state_reason: 'completed',
+                });
+                core.info(`Auto-closed resolved audit issue #${issue.number}.`);
+              }
+            } else {
+              core.info('Audit clean (0 findings) and no open audit issues.');
+            }
