@@ -1,3 +1,4 @@
+import driveArt from "./assets/disk-array.png";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -7,17 +8,19 @@ import {
   CopyCheck,
   FileSpreadsheet,
   FolderTree,
-  HardDrive,
+  FolderOpen,
+  Heart,
   LayoutGrid,
   Search,
   Sparkles,
   Trash2,
   X,
-} from "lucide-react";
+} from "./components/PixelIcons";
 import {
   BreadcrumbItem,
   DeletePreview,
   DeleteReport,
+  DiskHealthReport,
   DisplayMode,
   DriveInfo,
   FileCategory,
@@ -43,21 +46,22 @@ import { TopFilesTable } from "./components/TopFilesTable";
 import { DuplicatesPanel } from "./components/DuplicatesPanel";
 import { JunkCleanupPanel } from "./components/JunkCleanupPanel";
 import { TreemapView } from "./components/TreemapView";
+import { DiskHealthPanel } from "./components/DiskHealthPanel";
 import { SelectionActionBar } from "./components/SelectionActionBar";
 import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
 import { SnapshotDiffModal } from "./components/SnapshotDiffModal";
 import { SettingsModal } from "./components/SettingsModal";
 
-type ActiveTab = "tree" | "search" | "top_files" | "duplicates" | "junk" | "treemap";
+type ActiveTab = "tree" | "search" | "top_files" | "duplicates" | "junk" | "treemap" | "health";
 
 function DiskCleanupShell() {
   const { t } = useI18n();
 
   const [theme, setTheme] = useState<"dark" | "light">(() => {
     try {
-      return localStorage.getItem("diskcleanup.theme") === "light" ? "light" : "dark";
+      return localStorage.getItem("diskcleanup.theme") === "dark" ? "dark" : "light";
     } catch {
-      return "dark";
+      return "light";
     }
   });
   const [preferredEngine, setPreferredEngine] = useState<ScanEngineKind>("auto");
@@ -68,6 +72,9 @@ function DiskCleanupShell() {
     initialPath: null,
   });
   const [drives, setDrives] = useState<DriveInfo[]>([]);
+  const [diskHealth, setDiskHealth] = useState<DiskHealthReport | null>(null);
+  const [healthLoading, setHealthLoading] = useState<boolean>(false);
+  const [healthAutoRefreshSec, setHealthAutoRefreshSec] = useState<number>(60);
   const [recycleBin, setRecycleBin] = useState<RecycleBinInfo | null>(null);
   const [targetPath, setTargetPath] = useState<string>("");
   const [activeTab, setActiveTab] = useState<ActiveTab>("tree");
@@ -166,6 +173,26 @@ function DiskCleanupShell() {
     }
   }, []);
 
+  const refreshDiskHealth = useCallback(async () => {
+    setHealthLoading(true);
+    try {
+      const rep = await invoke<DiskHealthReport>("get_disk_health");
+      setDiskHealth(rep);
+    } catch {
+      // ignore on unsupported platforms
+    } finally {
+      setHealthLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (healthAutoRefreshSec <= 0) return;
+    const id = window.setInterval(() => {
+      void refreshDiskHealth();
+    }, healthAutoRefreshSec * 1000);
+    return () => window.clearInterval(id);
+  }, [healthAutoRefreshSec, refreshDiskHealth]);
+
   const currentFocusId =
     navHistory.index >= 0 && navHistory.index < navHistory.stack.length
       ? navHistory.stack[navHistory.index]
@@ -224,6 +251,7 @@ function DiskCleanupShell() {
           engineMode: preferredEngine,
         });
         setSummary(res);
+        setActiveTab((prev) => (prev === "health" ? "tree" : prev));
         setNavHistory({ stack: [res.rootId], index: 0 });
         setCurrentBreadcrumbs([]);
         setActiveRowId(null);
@@ -253,8 +281,13 @@ function DiskCleanupShell() {
         invoke<SystemInfoDto>("get_system_info"),
         refreshDrives(),
         refreshRecycleBin(),
+        refreshDiskHealth(),
       ]);
       setSystemInfo(sys);
+
+      if (sys.initialTab === "health") {
+        setActiveTab("health");
+      }
 
       if (sys.initialPath) {
         setTargetPath(sys.initialPath);
@@ -296,10 +329,11 @@ function DiskCleanupShell() {
     await invoke("cancel_scan");
   };
 
-  const handleRelaunchAdmin = async () => {
+  const handleRelaunchAdmin = async (tab?: string) => {
     try {
       await invoke("relaunch_as_admin", {
         targetPath: targetPath.trim() || null,
+        initialTab: tab ?? (activeTab === "health" ? "health" : null),
       });
     } catch (err) {
       showToast(String(err), true);
@@ -684,6 +718,32 @@ function DiskCleanupShell() {
     window.addEventListener("mouseup", onUp);
   };
 
+  const maxTempC = useMemo(() => {
+    if (!diskHealth || diskHealth.disks.length === 0) return null;
+    let hottest: number | null = null;
+    for (const d of diskHealth.disks) {
+      if (d.temperatureC !== null && (hottest === null || d.temperatureC > hottest)) {
+        hottest = d.temperatureC;
+      }
+    }
+    return hottest;
+  }, [diskHealth]);
+
+  const healthByDriveLetter = useMemo(() => {
+    const map = new Map<string, { pct: number | null; tempC: number | null; status: string }>();
+    if (!diskHealth) return map;
+    for (const d of diskHealth.disks) {
+      for (const letter of d.driveLetters) {
+        map.set(letter.toUpperCase(), {
+          pct: d.healthPercent,
+          tempC: d.temperatureC,
+          status: d.healthStatus,
+        });
+      }
+    }
+    return map;
+  }, [diskHealth]);
+
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden">
       <TopToolbar
@@ -695,15 +755,18 @@ function DiskCleanupShell() {
         onCancelScan={handleCancelScan}
         isScanning={isScanning}
         isAdmin={systemInfo.isAdmin}
-        onRelaunchAdmin={handleRelaunchAdmin}
+        onRelaunchAdmin={() => void handleRelaunchAdmin()}
         engineUsed={summary?.engineUsed ?? null}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onSearchSubmit={handleSearchSubmit}
         searchInputRef={searchInputRef}
-        sizeUnit={sizeUnit}
-        theme={theme}
-        onToggleTheme={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
+        healthActive={activeTab === "health"}
+        maxTempC={maxTempC}
+        onOpenHealth={() => {
+          setActiveTab("health");
+          if (!diskHealth) void refreshDiskHealth();
+        }}
         onOpenSettings={() => setSettingsOpen(true)}
       />
 
@@ -716,7 +779,7 @@ function DiskCleanupShell() {
       />
 
       {/* ViewControlBar */}
-      {summary && (
+      {summary && activeTab !== "health" && (
         <ViewControlBar
           canBack={canBack}
           canForward={canForward}
@@ -761,6 +824,7 @@ function DiskCleanupShell() {
               { id: "duplicates", label: t.tabDuplicates, icon: CopyCheck },
               { id: "junk", label: t.tabJunk, icon: Sparkles },
               { id: "treemap", label: t.tabTreemap, icon: LayoutGrid },
+              { id: "health", label: t.tabHealth, icon: Heart },
             ] as const
           ).map((tab) => {
             const Icon = tab.icon;
@@ -768,6 +832,7 @@ function DiskCleanupShell() {
             return (
               <button
                 key={tab.id}
+                aria-current={active ? "page" : undefined}
                 type="button"
                 onClick={() => {
                   if (tab.id !== "top_files") setTopFilesCatFilter(null);
@@ -789,25 +854,60 @@ function DiskCleanupShell() {
 
       {/* Main Content */}
       <main className="flex-1 min-h-0 flex flex-col">
-        {!summary ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center gap-5">
-            <div className="w-14 h-14 rounded-xl bg-sky-500/10 border border-sky-500/25 flex items-center justify-center text-sky-400">
-              <HardDrive className="w-7 h-7" />
-            </div>
-            <div className="max-w-md flex flex-col gap-1.5">
-              <h1 className="text-[18px] font-semibold">{t.emptyTitle}</h1>
-              <p className="text-[13px]" style={{ color: "var(--text-secondary)" }}>
-                {t.emptySubtitle}
-              </p>
-            </div>
-
+        {activeTab === "health" ? (
+          <DiskHealthPanel
+            report={diskHealth}
+            loading={healthLoading}
+            hasScanSummary={summary !== null}
+            autoRefreshSec={healthAutoRefreshSec}
+            onChangeAutoRefresh={setHealthAutoRefreshSec}
+            onRefresh={() => void refreshDiskHealth()}
+            onRelaunchAdmin={() => void handleRelaunchAdmin("health")}
+            onBackHome={() => setActiveTab("tree")}
+            onCopyText={handleCopyText}
+            onToast={showToast}
+          />
+        ) : !summary ? (
+          <section className="home-screen">
+            <div className="home-content">
+              <div className="welcome-panel">
+                <div className="welcome-copy">
+                  <h1>{t.emptyTitle}</h1>
+                  <p>{t.emptySubtitle}</p>
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <button type="button" className="folder-action" onClick={handleBrowseFolder} disabled={isScanning}>
+                      <FolderOpen className="w-4 h-4" />{t.browseFolder}
+                    </button>
+                    <button
+                      type="button"
+                      className="folder-action"
+                      style={{
+                        background: "var(--bg-elevated)",
+                        color: "var(--text-primary)",
+                      }}
+                      onClick={() => {
+                        setActiveTab("health");
+                        if (!diskHealth) void refreshDiskHealth();
+                      }}
+                    >
+                      <Heart className="w-4 h-4 text-rose-400" />
+                      {t.tabHealth}
+                      {maxTempC !== null ? ` (${maxTempC}°C)` : ""}
+                    </button>
+                  </div>
+                </div>
+                <div className="disk-scene" aria-hidden="true"><img src={driveArt} alt="" /></div>
+              </div>
             {drives.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-w-3xl w-full mt-2">
+              <>
+              <h2 className="drive-heading">{t.availableDrives}</h2>
+              <div className="drive-grid">
                 {drives.map((d) => {
                   const usedPct =
                     d.totalBytes > 0
                       ? Math.min(100, (d.usedBytes / d.totalBytes) * 100)
                       : 0;
+                  const dh = healthByDriveLetter.get(d.path.slice(0, 2).toUpperCase());
                   return (
                     <button
                       key={d.path}
@@ -816,25 +916,46 @@ function DiskCleanupShell() {
                         setTargetPath(d.path);
                         void startScan(d.path);
                       }}
-                      className="p-3 rounded-md border text-left flex flex-col gap-2 hover:border-sky-500/60 cursor-pointer transition-colors"
+                      disabled={isScanning}
+                      className="drive-card p-3 border text-left flex flex-col gap-2 hover:border-sky-500/60 cursor-pointer transition-colors"
                       style={{
                         backgroundColor: "var(--bg-panel)",
                         borderColor: "var(--border-subtle)",
                       }}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-[13px]">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-[13px] truncate">
                           {d.path} {d.label ? `(${d.label})` : ""}
                         </span>
-                        <span
-                          className="font-mono-num text-[10px] px-1.5 py-0.5 rounded border"
-                          style={{
-                            borderColor: "var(--border-subtle)",
-                            color: "var(--text-muted)",
-                          }}
-                        >
-                          {d.fsType || d.driveType}
-                        </span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {dh && (dh.pct !== null || dh.tempC !== null) && (
+                            <span
+                              className="font-mono-num text-[10px] px-1.5 py-0.5 rounded border"
+                              style={{
+                                borderColor: "var(--border-subtle)",
+                                color:
+                                  dh.tempC !== null && dh.tempC >= 60
+                                    ? "var(--danger)"
+                                    : dh.status === "caution"
+                                    ? "var(--warning)"
+                                    : "var(--success)",
+                              }}
+                            >
+                              {dh.pct !== null ? `${dh.pct}%` : ""}
+                              {dh.pct !== null && dh.tempC !== null ? " · " : ""}
+                              {dh.tempC !== null ? `${dh.tempC}°C` : ""}
+                            </span>
+                          )}
+                          <span
+                            className="font-mono-num text-[10px] px-1.5 py-0.5 rounded border"
+                            style={{
+                              borderColor: "var(--border-subtle)",
+                              color: "var(--text-muted)",
+                            }}
+                          >
+                            {d.fsType || d.driveType}
+                          </span>
+                        </div>
                       </div>
                       <div
                         className="w-full h-2 rounded-full overflow-hidden"
@@ -869,8 +990,10 @@ function DiskCleanupShell() {
                   );
                 })}
               </div>
+              </>
             )}
-          </div>
+            </div>
+          </section>
         ) : activeTab === "tree" ? (
           <div ref={splitContainerRef} className="flex flex-col flex-1 min-h-0">
             <div

@@ -1,130 +1,89 @@
-# DiskCleanupTool
+# ![DiskCleanupTool](docs/screenshots/diskcleanuptool-wordmark.png)
 
-[![CI](https://github.com/letoan9319/DiskCleanupTool/actions/workflows/ci.yml/badge.svg)](https://github.com/letoan9319/DiskCleanupTool/actions/workflows/ci.yml)
-[![Release](https://github.com/letoan9319/DiskCleanupTool/actions/workflows/release.yml/badge.svg)](https://github.com/letoan9319/DiskCleanupTool/actions/workflows/release.yml)
-[![Audit Bot](https://github.com/letoan9319/DiskCleanupTool/actions/workflows/audit-bot.yml/badge.svg)](https://github.com/letoan9319/DiskCleanupTool/actions/workflows/audit-bot.yml)
-[![Latest Release](https://img.shields.io/github/v/release/letoan9319/DiskCleanupTool?include_prereleases&label=download)](https://github.com/letoan9319/DiskCleanupTool/releases/latest)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+**A Windows utility for finding what takes up disk space, reviewing cleanup candidates, and checking physical drive health.** Built with Rust, Tauri 2, and React, with a pixel-style interface, light and dark themes, and eight UI languages.
 
-**DiskCleanupTool** is a fast, native Windows disk space analyzer and safe cleanup utility built with **Rust**, **Tauri v2**, and **React**. Designed for instant visibility into what is consuming storage, it combines a low-memory compact arena engine, direct NTFS MFT + Win32 parallel scanning, TreeSize-style descending folder inspection, interactive treemaps, BLAKE3 duplicate detection, developer/WSL2 junk cleanup, and snapshot growth diffing.
+[Download for Windows](#download-for-windows) · [Quick start](#quick-start) · [Disk health](#disk-health) · [Build from source](#build-from-source)
 
----
+![DiskCleanupTool home screen with pixel-art drive illustration and capacity cards](docs/screenshots/drive-overview.png)
 
-## Download (Windows x64)
+*Screenshots show the v0.3.0 interface with sample drive, folder, and S.M.A.R.T. data.*
 
-Get the latest Windows build directly from **[GitHub Releases](https://github.com/letoan9319/DiskCleanupTool/releases/latest)**:
+## Download for Windows
 
-| Package | Direct Link | Notes |
-| :--- | :--- | :--- |
-| **Windows Installer (NSIS)** | [Download Latest Installer (`DiskCleanupTool-latest-x64-setup.exe`)](https://github.com/letoan9319/DiskCleanupTool/releases/latest/download/DiskCleanupTool-latest-x64-setup.exe) | Per-user or per-machine install, 8-language wizard, optional Explorer Context Menu |
-| **Portable ZIP** | [Download Portable (`DiskCleanupTool-latest-portable.zip`)](https://github.com/letoan9319/DiskCleanupTool/releases/latest/download/DiskCleanupTool-latest-portable.zip) | Extract and run `DiskCleanupTool.exe` without installation |
-| **Checksums** | [`SHA256SUMS.txt`](https://github.com/letoan9319/DiskCleanupTool/releases/latest/download/SHA256SUMS.txt) | Verify integrity with `Get-FileHash <file> -Algorithm SHA256` |
+Download the installer or portable ZIP from the [latest GitHub release](https://github.com/letoan9319/DiskCleanupTool/releases/latest). The release page lists the published version and available files. This README documents the **v0.3.0 source tree**.
 
-> **Requirements:** Windows 10 / 11 (64-bit) with Microsoft Edge WebView2 Runtime (pre-installed on Windows 11 and modern Windows 10). Run as **Administrator** to unlock direct NTFS MFT scanning.
+| Package | How to use it |
+| --- | --- |
+| NSIS installer | Run the setup executable. The installer offers per-user or per-machine installation and optional Explorer integration. |
+| Portable ZIP | Extract the archive and open `DiskCleanupTool.exe`. |
+| `SHA256SUMS.txt` | Compare the corresponding hash with `Get-FileHash <file> -Algorithm SHA256`. |
 
----
+The app supports **Windows 10 and 11 (x64)** and requires the **Microsoft Edge WebView2 Runtime**. Standard permissions are enough to scan folders you can access. Run as administrator to use direct NTFS MFT scanning for eligible volumes.
 
-## Key Features (v0.2.0)
+## Quick start
 
-- **Dual High-Speed Scan Engine**
-  - **Direct NTFS MFT Reader** (when elevated) with parallel record parsing and extension-record merging for near-instant full-volume scans.
-  - **Native Win32 Parallel Walker** (`FindFirstFileExW` with `FIND_FIRST_EX_LARGE_FETCH` + Rayon work queue) for non-admin, folder, or non-NTFS scans — zero per-file `metadata()` syscalls, extended-length path (`\\?\`) support, and OneDrive cloud-placeholder awareness (`allocated = 0`).
-  - **Compact Arena Memory Model**: pooled strings and flat CSR child arrays keep RAM usage minimal even on drives with millions of files.
-- **TreeSize-Style Descending Analysis & View Controls**
-  - Instant descending sort by **Size**, **Allocated**, **Files**, **Folders**, **Name**, or **Modified**.
-  - Switch display metrics (**Size** | **Allocated** | **Files** | **%**) and size units (**Auto** | **GB** | **MB** | **KB**) on the fly.
-  - History navigation (**Back**, **Forward**, **Up**) and one-click tree depth expansion (**Lv 1** | **Lv 2** | **Lv 3** | **Collapse**).
-- **Resizable Split View (Folder Tree + Synced Treemap)**
-  - Inspect folders in a virtualized hierarchy on top while navigating a synchronized proportional **Treemap** below with a draggable divider.
-- **Global Instant Search**
-  - Search across the entire scanned drive in milliseconds with rich filter syntax: size thresholds (`>100MB`, `>1GB`), age filters (`older:1y`), multi-extension globs (`*.mp4;*.mkv`, `*.iso;*.zip`), and categories (`type:archive`), complete with match count, total matched bytes, and query latency.
-- **3-Stage BLAKE3 Duplicate Finder**
-  - Fast size grouping -> partial head/tail hashing -> parallel full **BLAKE3** verification with live cancelable progress.
-  - One-click **Smart Auto-Select** policies (`Keep Newest`, `Keep Oldest`, `Keep Shortest Path`) to safely queue redundant copies for deletion.
-- **Developer, GPU & WSL2 Junk Cleanup**
-  - Detects reclaimable caches across Cargo, npm/pnpm/yarn/pip/NuGet, GPU shader caches, `Windows.old`, temp directories, and **Empty Folders**.
-  - Highlights oversized **WSL2 / Docker Virtual Disks (`.vhdx`)** with safe one-click `diskpart` / `Optimize-VHD` compact commands instead of destructive deletion.
-- **Snapshot & Storage Growth Diff**
-  - Save lightweight directory snapshots (`.dctsnap.json`) and compare against a later scan to pinpoint exactly which folders grew (`+GB` / `-GB`).
-- **Safe File Operations & Shell Integration**
-  - Built-in **System Path Safety Guard** blocks critical Windows OS directories (`Windows`, `System32`, boot files) from accidental removal.
-  - Move to **Recycle Bin** (with live Recycle Bin size/count badge and one-click empty), permanent delete with confirmation preview, Move, Rename, New Folder, Open File, Reveal in Explorer, Open Terminal Here (`wt.exe` / PowerShell), Properties dialog, and **CSV / JSON** report export.
-  - Optional **Windows Explorer Context Menu** entry (*"Scan with DiskCleanupTool"*) toggleable in Settings or during NSIS setup.
-- **8 Languages & Light / Dark Themes**
-  - Full UI and NSIS installer localization in **English**, **Vietnamese**, **Simplified Chinese**, **Japanese**, **Korean**, **Spanish**, **German**, and **French**.
+1. Select an available drive, or choose **Folder** to scan a particular directory.
+2. Sort the **Folder Tree** by size or on-disk usage. Open **Treemap** to see how space is distributed, or enable **Split View** from **View options** to use both together.
+3. Press `Ctrl+K` to focus search, enter a query such as `>100MB *.mp4;*.mkv`, then press `Enter`. Try `older:1y` for older files or `type:archive` for archives.
+4. Review candidates in **Top Largest Files**, **Duplicates**, or **Categories & Junk**. For items you decide to remove, review the deletion preview and choose the Recycle Bin or permanent deletion where available.
 
----
+![Scan results showing the folder tree above a synchronized treemap](docs/screenshots/treemap.png)
 
-## Keyboard Shortcuts & Quick Actions
+Double-click a folder to drill down. Use **Back**, **Forward**, and **Up** to navigate. **View options** also controls the displayed metric, units, and tree depth. **Tools** contains CSV and JSON exports, Snapshot / Diff, and the Recycle Bin action.
 
-| Shortcut / Action | Description |
-| :--- | :--- |
-| `Ctrl + K` | Focus and select the global search input |
-| `Enter` (in search bar) | Open the **Global Search** tab and run full-drive query |
-| `Double-click` folder (Tree / Treemap) | Drill into folder and record navigation history |
-| `Right-click` item | Open context menu (Open, Reveal in Explorer, Move, Rename, New Folder, Open Terminal Here, Properties, Copy Path, Delete) |
-| Toolbar `←` / `→` / `↑` | Navigate Back, Forward, or Up to parent folder |
+## Disk health
 
----
+Open **Disk Health** directly from the toolbar. The panel lists physical drives and associated drive letters. For supported NVMe and ATA devices, it can show temperature, health status, lifetime counters, and decoded S.M.A.R.T. attributes. Available fields depend on the device, controller, and access permissions. The panel can show basic drive information when full S.M.A.R.T. data is unavailable.
 
-## Architecture
+Refresh manually or use an automatic refresh interval. Copy the report or export TXT or JSON. Use **Hide Serial** before sharing a report if you want to mask the drive serial number.
 
-```text
-DiskCleanupTool/
-├── crates/disk-core/     # Pure Rust core engine: compact arena, NTFS MFT & Win32 parallel
-│                         # scanner, global search, BLAKE3 duplicates, junk & snapshot diff
-├── src-tauri/            # Tauri v2 host, IPC commands, Win32 Shell/Recycle Bin/Context Menu,
-│                         # NSIS installer hooks
-├── src/                  # React 19 + TypeScript + Tailwind CSS v4 + TanStack Virtual UI
-└── .github/              # CI, automated Windows NSIS/portable releases, Audit Bot, Dependabot
-```
+![Disk Health panel showing an example NVMe drive, temperature, wear estimate, and S.M.A.R.T. attributes](docs/screenshots/disk-health.png)
 
----
+## Analysis and cleanup tools
 
-## Building from Source
+| Tool | What it does |
+| --- | --- |
+| Scan engines | Uses direct NTFS Master File Table (MFT) reads for eligible elevated volume scans and a parallel Win32 walker for folder scans and fallback. |
+| Duplicate finder | Groups by size, filters by partial hashes, and verifies candidates with full BLAKE3 hashes. Selection rules can keep the newest, oldest, or shortest-path copy. |
+| Junk candidates | Groups supported developer and GPU caches, temporary files, and empty folders. For WSL2 or Docker VHDX files, the app offers commands you can copy to compact the virtual disk. |
+| Snapshots | Saves a directory snapshot and compares it with a later scan to identify folders that grew or shrank. |
+| File operations | Supports move, rename, new folder, Explorer integration, and deletion with a preview. A safety guard blocks deletion of protected Windows paths. |
 
-### Prerequisites
+## Build from source
 
-- **Windows 10/11 (x64)**
-- **Node.js 22+** and `npm`
-- **Rust stable toolchain** (`x86_64-pc-windows-msvc`) with Visual Studio C++ Build Tools (or `x86_64-pc-windows-gnu` for local dev builds)
-- **WebView2 Runtime**
-
-### Development & Production Commands
+Install **Node.js 22**, **Rust stable for Windows x64**, **Visual Studio C++ Build Tools** for the MSVC toolchain, and **WebView2 Runtime**. Run these commands from the repository root.
 
 ```powershell
-# 1. Install frontend dependencies
 npm ci
-
-# 2. Run Rust core unit tests
-cargo test -p disk-core
-
-# 3. Start Tauri development app (hot reload)
 npm run tauri dev
+```
 
-# 4. Build frontend + workspace check + Clippy
+Run the same checks as CI.
+
+```powershell
 npm run build
+cargo test -p disk-core
 cargo check --workspace
 cargo clippy --workspace --all-targets
+```
 
-# 5. Build production Windows NSIS installer
+Create a local NSIS installer. The installer is written to `target/release/bundle/nsis/`. The release workflow also builds an MSI and packages the portable ZIP with SHA-256 checksums.
+
+```powershell
 npm run tauri build -- --bundles nsis
 ```
 
-Build outputs:
-- Release binary: `target/release/DiskCleanupTool.exe`
-- NSIS installer: `target/release/bundle/nsis/DiskCleanupTool_0.2.0_x64-setup.exe`
+## Project layout
 
----
+| Path | Responsibility |
+| --- | --- |
+| `crates/disk-core/` | Rust scanning, compact tree storage, search, duplicates, cleanup safety, snapshots, and S.M.A.R.T. parsing. |
+| `src-tauri/` | Tauri command bridge, Windows shell integration, application icons, and installer configuration. |
+| `src/` | React and TypeScript interface, virtualized tables, treemap, disk health, and translations. |
+| `.github/workflows/` | Windows CI, release packaging, and dependency auditing. |
 
-## Automation & Quality Assurance
-
-- **CI ([`ci.yml`](.github/workflows/ci.yml))**: Runs `npm ci`, `npm run build`, `cargo test -p disk-core`, `cargo check --workspace`, and `cargo clippy --workspace --all-targets` on Windows MSVC for every push and PR to `main`.
-- **Releases ([`release.yml`](.github/workflows/release.yml))**: Automatically builds the NSIS installer, portable ZIP, and `SHA256SUMS.txt`. Pushing a `v*` tag creates a versioned release; pushes to `main` keep the rolling `latest` release up to date.
-- **Audit Bot ([`audit-bot.yml`](.github/workflows/audit-bot.yml))**: Runs weekly and on pushes to `main` to check `cargo audit`, `npm audit`, `cargo clippy`, and Rust code hygiene (`.unwrap()` / `TODO` / `FIXME`), automatically tracking and closing findings in a deduplicated `automated-audit` GitHub Issue.
-
----
+Use the [issue tracker](https://github.com/letoan9319/DiskCleanupTool/issues) for bugs or feature requests. Include the app version, Windows version, and steps to reproduce when reporting a bug.
 
 ## License
 
-Licensed under the [MIT License](LICENSE).
+[MIT](LICENSE)

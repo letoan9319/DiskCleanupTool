@@ -293,6 +293,7 @@ pub fn detect_junk_targets(arena: &ScanArena) -> Vec<JunkGroup> {
                         Some("dev_cargo_cache")
                     } else if path_lower.ends_with("\\yarn\\cache")
                         || path_lower.ends_with("\\pip\\cache")
+                        || path_lower.ends_with("\\uv\\cache")
                     {
                         Some("dev_pkg_cache")
                     } else if path_lower.contains("\\appdata\\") {

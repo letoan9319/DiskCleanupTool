@@ -405,3 +405,83 @@ pub struct MoveReport {
     pub updated_root_files: u64,
     pub updated_root_dirs: u64,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum HealthStatus {
+    Good,
+    Caution,
+    Critical,
+    Unknown,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SmartAttrStatus {
+    Good,
+    Caution,
+    Critical,
+    Neutral,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SmartProtocol {
+    Nvme,
+    Ata,
+    BasicOnly,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SmartAttribute {
+    pub id: u8,
+    pub id_hex: String,
+    pub name: String,
+    pub status: SmartAttrStatus,
+    pub current: Option<u8>,
+    pub worst: Option<u8>,
+    pub threshold: Option<u8>,
+    pub raw_hex: String,
+    pub raw_value: u64,
+    pub decoded_value: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PhysicalDiskHealth {
+    pub disk_index: u32,
+    pub model: String,
+    pub serial_number: String,
+    pub firmware: String,
+    pub capacity_bytes: u64,
+    pub drive_letters: Vec<String>,
+    pub interface_type: String,
+    pub standard: String,
+    pub media_type: String,
+    pub rotation_rate: Option<u32>,
+    pub features: Vec<String>,
+    pub protocol: SmartProtocol,
+    pub health_status: HealthStatus,
+    pub health_percent: Option<u8>,
+    pub temperature_c: Option<i32>,
+    pub total_host_reads_bytes: Option<u64>,
+    pub total_host_writes_bytes: Option<u64>,
+    pub power_on_count: Option<u64>,
+    pub power_on_hours: Option<u64>,
+    pub unsafe_shutdowns: Option<u64>,
+    pub media_errors: Option<u64>,
+    pub available_spare_pct: Option<u8>,
+    pub smart_available: bool,
+    pub requires_admin_for_smart: bool,
+    pub diagnostic_notes: Vec<String>,
+    pub attributes: Vec<SmartAttribute>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiskHealthReport {
+    pub is_admin: bool,
+    pub disks: Vec<PhysicalDiskHealth>,
+    pub collected_at_ts: i64,
+}

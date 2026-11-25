@@ -12,7 +12,7 @@ import {
   Sparkles,
   Terminal,
   Trash2,
-} from "lucide-react";
+} from "./PixelIcons";
 import {
   CATEGORY_COLORS,
   CategoryStat,
@@ -448,7 +448,7 @@ export function JunkCleanupPanel({
                 return (
                   <div
                     key={group.groupKey}
-                    className="rounded border overflow-hidden"
+                    className="rounded border overflow-hidden shrink-0"
                     style={{
                       backgroundColor: "var(--bg-elevated)",
                       borderColor: "var(--border-subtle)",

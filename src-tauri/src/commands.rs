@@ -14,13 +14,14 @@ use disk_core::deleter::{
 use disk_core::duplicates::find_duplicates as core_find_duplicates;
 use disk_core::model::{
     BreadcrumbItem, CategoryStat, ChildrenPage, DeleteFailure, DeletePreview, DeleteReport,
-    DuplicateReport, ExpandedTreeEntry, FileCategory, JunkGroup, MoveReport, NodeDto, NodeId,
-    SafetyLevel, ScanEngineKind, ScanSummary, SearchResult, SnapshotDiffReport, SortDir, SortField,
-    TreemapItem,
+    DiskHealthReport, DuplicateReport, ExpandedTreeEntry, FileCategory, JunkGroup, MoveReport,
+    NodeDto, NodeId, SafetyLevel, ScanEngineKind, ScanSummary, SearchResult, SnapshotDiffReport,
+    SortDir, SortField, TreemapItem,
 };
 use disk_core::safety::evaluate_path_safety;
 use disk_core::scanner::scan_path;
 use disk_core::search::search_arena;
+use disk_core::smart::{collect_all_disk_health, format_smart_report_text};
 use disk_core::snapshot::{compare_snapshot_file, export_report_to_file, save_snapshot_to_file};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, State};
@@ -42,6 +43,7 @@ pub struct SystemInfoDto {
     pub is_admin: bool,
     pub context_menu_enabled: bool,
     pub initial_path: Option<String>,
+    pub initial_tab: Option<String>,
 }
 
 fn validate_entry_name(name: &str) -> Result<&str, String> {
@@ -94,10 +96,12 @@ fn deduplicate_node_ids(arena: &ScanArena, node_ids: &[NodeId]) -> Vec<NodeId> {
 #[tauri::command]
 pub fn get_system_info(state: State<'_, AppState>) -> SystemInfoDto {
     let initial_path = state.initial_path.lock().ok().and_then(|mut g| g.take());
+    let initial_tab = state.initial_tab.lock().ok().and_then(|mut g| g.take());
     SystemInfoDto {
         is_admin: is_elevated(),
         context_menu_enabled: is_context_menu_enabled(),
         initial_path,
+        initial_tab,
     }
 }
 
@@ -317,8 +321,12 @@ pub fn reveal_in_explorer(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn relaunch_as_admin(app: AppHandle, target_path: Option<String>) -> Result<(), String> {
-    shell_relaunch_as_admin(target_path)?;
+pub fn relaunch_as_admin(
+    app: AppHandle,
+    target_path: Option<String>,
+    initial_tab: Option<String>,
+) -> Result<(), String> {
+    shell_relaunch_as_admin(target_path, initial_tab)?;
     app.exit(0);
     Ok(())
 }
@@ -683,4 +691,46 @@ pub fn compare_snapshot(
         return Err("No scan data loaded".to_string());
     };
     compare_snapshot_file(Path::new(&snapshot_path), arena)
+}
+
+// ============================================================================
+// v0.3.0 Disk Health (S.M.A.R.T.) Commands
+// ============================================================================
+
+#[tauri::command]
+pub async fn get_disk_health() -> Result<DiskHealthReport, String> {
+    tauri::async_runtime::spawn_blocking(collect_all_disk_health)
+        .await
+        .map_err(|e| format!("Disk health query panicked: {}", e))
+}
+
+#[tauri::command]
+pub async fn export_disk_health(
+    disk_index: u32,
+    format: String,
+    mask_serial: bool,
+    dest_path: String,
+) -> Result<(), String> {
+    let report = tauri::async_runtime::spawn_blocking(collect_all_disk_health)
+        .await
+        .map_err(|e| format!("Disk health query panicked: {}", e))?;
+
+    let disk = report
+        .disks
+        .iter()
+        .find(|d| d.disk_index == disk_index)
+        .ok_or_else(|| format!("Physical disk #{} not found", disk_index))?;
+
+    let content = match format.to_ascii_lowercase().as_str() {
+        "json" => {
+            let mut cloned = disk.clone();
+            if mask_serial {
+                cloned.serial_number = "****************".to_string();
+            }
+            serde_json::to_string_pretty(&cloned).map_err(|e| e.to_string())?
+        }
+        _ => format_smart_report_text(disk, mask_serial),
+    };
+
+    std::fs::write(Path::new(&dest_path), content).map_err(|e| e.to_string())
 }

@@ -12,7 +12,7 @@ import {
   ShieldBan,
   Trash2,
   X,
-} from "lucide-react";
+} from "./PixelIcons";
 import {
   CATEGORY_COLORS,
   NodeDto,

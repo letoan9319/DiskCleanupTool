@@ -1,20 +1,16 @@
+import appIcon from "../../src-tauri/icons/32x32.png";
 import React from "react";
 import {
   FolderOpen,
-  HardDrive,
+  Heart,
   Play,
   Search,
   Settings,
   ShieldAlert,
-  ShieldCheck,
   Square,
-  Sun,
-  Moon,
   Zap,
-  Cpu,
-} from "lucide-react";
-import { DriveInfo, ScanEngineKind, SizeUnit, formatBytes } from "../types/disk";
-import { LANGUAGES, LangCode } from "../i18n/translations";
+} from "./PixelIcons";
+import { DriveInfo, ScanEngineKind } from "../types/disk";
 import { useI18n } from "../i18n/useI18n";
 
 interface TopToolbarProps {
@@ -32,9 +28,9 @@ interface TopToolbarProps {
   onSearchChange: (q: string) => void;
   onSearchSubmit: () => void;
   searchInputRef: React.RefObject<HTMLInputElement | null>;
-  sizeUnit: SizeUnit;
-  theme: "dark" | "light";
-  onToggleTheme: () => void;
+  healthActive: boolean;
+  maxTempC: number | null;
+  onOpenHealth: () => void;
   onOpenSettings: () => void;
 }
 
@@ -53,33 +49,117 @@ export function TopToolbar({
   onSearchChange,
   onSearchSubmit,
   searchInputRef,
-  sizeUnit,
-  theme,
-  onToggleTheme,
+  healthActive,
+  maxTempC,
+  onOpenHealth,
   onOpenSettings,
 }: TopToolbarProps) {
-  const { lang, setLang, t } = useI18n();
+  const { t } = useI18n();
 
   return (
     <header
-      className="flex flex-col gap-2 px-3 py-2 border-b shrink-0"
+      className="app-header shrink-0"
       style={{
         backgroundColor: "var(--bg-panel)",
         borderColor: "var(--border-subtle)",
       }}
     >
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="utility-row">
         {/* Brand */}
         <div
-          className="flex items-center gap-2 pr-2 border-r"
+          className="app-brand"
           style={{ borderColor: "var(--border-subtle)" }}
         >
-          <div className="w-6 h-6 rounded flex items-center justify-center bg-sky-500/15 text-sky-400">
-            <HardDrive className="w-4 h-4" />
-          </div>
+          <img width="32" height="32" src={appIcon} alt="" />
           <span className="font-semibold text-[14px] tracking-tight">{t.appName}</span>
         </div>
 
+        {/* Quick Search (Enter opens Global Search tab) */}
+        <div
+          className="flex items-center h-8 w-[200px] lg:w-[250px] px-2 rounded border gap-1.5"
+          style={{
+            backgroundColor: "var(--bg-elevated)",
+            borderColor: "var(--border-subtle)",
+          }}
+        >
+          <Search
+            className="w-3.5 h-3.5 shrink-0"
+            style={{ color: "var(--text-muted)" }}
+          />
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                onSearchSubmit();
+              }
+            }}
+            placeholder={t.tabSearch}
+            aria-label={t.searchPlaceholder}
+            className="w-full bg-transparent outline-none text-[12px]"
+            style={{ color: "var(--text-primary)" }}
+          />
+          {!searchQuery && <kbd className="search-shortcut">Ctrl K</kbd>}
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => onSearchChange("")}
+              className="text-[11px] px-1 rounded cursor-pointer"
+              style={{ color: "var(--text-muted)" }}
+            >
+              ×
+            </button>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={onOpenHealth}
+          className="h-8 px-2.5 rounded border flex items-center gap-1.5 text-[12px] font-medium cursor-pointer hover:opacity-90"
+          style={{
+            backgroundColor: healthActive ? "var(--bg-selected)" : "var(--bg-elevated)",
+            borderColor: healthActive ? "var(--accent)" : "var(--border-subtle)",
+            color: healthActive ? "var(--accent)" : "var(--text-primary)",
+          }}
+          title={t.healthTitle}
+        >
+          <Heart className="w-3.5 h-3.5 text-rose-400" />
+          <span className="hidden sm:inline">{t.tabHealth}</span>
+          {maxTempC !== null && (
+            <span
+              className="font-mono-num text-[11px] font-semibold"
+              style={{
+                color:
+                  maxTempC >= 60
+                    ? "var(--danger)"
+                    : maxTempC >= 50
+                    ? "var(--warning)"
+                    : "var(--success)",
+              }}
+            >
+              {maxTempC}°C
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={onOpenSettings}
+          className="h-8 w-8 rounded border flex items-center justify-center cursor-pointer hover:opacity-90"
+          style={{
+            backgroundColor: "var(--bg-elevated)",
+            borderColor: "var(--border-subtle)",
+            color: "var(--text-secondary)",
+          }}
+          title={t.settings}
+        >
+          <Settings className="w-3.5 h-3.5" />
+        </button>
+      </div>
+      <div className="scan-controls">
         {/* Quick Drive Selector */}
         <select
           value={
@@ -99,22 +179,14 @@ export function TopToolbar({
             borderColor: "var(--border-subtle)",
             color: "var(--text-primary)",
           }}
-          title="Select Drive"
+          aria-label={t.availableDrives}
         >
           <option value="" disabled>
-            {drives.length > 0 ? "Drives..." : "Loading drives..."}
+            {t.availableDrives}
           </option>
-          {drives.map((d) => {
-            const pct =
-              d.totalBytes > 0 ? Math.round((d.usedBytes / d.totalBytes) * 100) : 0;
-            return (
-              <option key={d.path} value={d.path}>
-                {d.path} {d.label ? `(${d.label})` : ""} —{" "}
-                {formatBytes(d.usedBytes, sizeUnit)} / {formatBytes(d.totalBytes, sizeUnit)}{" "}
-                ({pct}%) [{d.fsType || d.driveType}]
-              </option>
-            );
-          })}
+          {drives.map((drive) => (
+            <option key={drive.path} value={drive.path}>{drive.path} {drive.label}</option>
+          ))}
         </select>
 
         {/* Editable Path Input */}
@@ -193,112 +265,16 @@ export function TopToolbar({
           <button
             type="button"
             onClick={onRelaunchAdmin}
-            className="h-8 px-2.5 rounded border flex items-center gap-1.5 text-[11px] font-medium cursor-pointer hover:opacity-90 text-amber-400 border-amber-500/35 bg-amber-500/10"
-            title="Restart elevated with UAC for ultra-fast NTFS MFT scanning"
+            className="h-8 px-2.5 rounded border flex items-center gap-1.5 text-[11px] font-medium cursor-pointer hover:opacity-90 admin-action"
+            title={t.runAsAdmin}
           >
             <ShieldAlert className="w-3.5 h-3.5" />
             <span className="hidden md:inline">{t.runAsAdmin}</span>
           </button>
         )}
 
-        {/* Quick Search (Enter opens Global Search tab) */}
-        <div
-          className="flex items-center h-8 w-[200px] lg:w-[250px] px-2 rounded border gap-1.5"
-          style={{
-            backgroundColor: "var(--bg-elevated)",
-            borderColor: "var(--border-subtle)",
-          }}
-        >
-          <Search
-            className="w-3.5 h-3.5 shrink-0"
-            style={{ color: "var(--text-muted)" }}
-          />
-          <input
-            ref={searchInputRef}
-            type="text"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                onSearchSubmit();
-              }
-            }}
-            placeholder={t.searchPlaceholder}
-            className="w-full bg-transparent outline-none text-[12px]"
-            style={{ color: "var(--text-primary)" }}
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => onSearchChange("")}
-              className="text-[11px] px-1 rounded cursor-pointer"
-              style={{ color: "var(--text-muted)" }}
-            >
-              ×
-            </button>
-          )}
-        </div>
-
-        {/* Language Quick Switch */}
-        <select
-          value={lang}
-          onChange={(e) => setLang(e.target.value as LangCode)}
-          className="h-8 px-1.5 rounded border text-[11px] outline-none cursor-pointer"
-          style={{
-            backgroundColor: "var(--bg-elevated)",
-            borderColor: "var(--border-subtle)",
-            color: "var(--text-secondary)",
-          }}
-          title={t.languageLabel}
-        >
-          {LANGUAGES.map((l) => (
-            <option key={l.code} value={l.code}>
-              {l.native}
-            </option>
-          ))}
-        </select>
-
-        {/* Theme & Settings */}
-        <button
-          type="button"
-          onClick={onToggleTheme}
-          className="h-8 w-8 rounded border flex items-center justify-center cursor-pointer hover:opacity-90"
-          style={{
-            backgroundColor: "var(--bg-elevated)",
-            borderColor: "var(--border-subtle)",
-            color: "var(--text-secondary)",
-          }}
-          title={theme === "dark" ? t.themeLight : t.themeDark}
-        >
-          {theme === "dark" ? (
-            <Sun className="w-3.5 h-3.5" />
-          ) : (
-            <Moon className="w-3.5 h-3.5" />
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={onOpenSettings}
-          className="h-8 w-8 rounded border flex items-center justify-center cursor-pointer hover:opacity-90"
-          style={{
-            backgroundColor: "var(--bg-elevated)",
-            borderColor: "var(--border-subtle)",
-            color: "var(--text-secondary)",
-          }}
-          title={t.settings}
-        >
-          <Settings className="w-3.5 h-3.5" />
-        </button>
       </div>
 
-      {engineUsed && (
-        <div className="hidden" aria-hidden="true">
-          <ShieldCheck />
-          <Cpu />
-        </div>
-      )}
     </header>
   );
 }

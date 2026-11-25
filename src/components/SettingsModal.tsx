@@ -1,4 +1,5 @@
-import { X } from "lucide-react";
+import appIcon from "../../src-tauri/icons/32x32.png";
+import { X } from "./PixelIcons";
 import { LANGUAGES, LangCode } from "../i18n/translations";
 import { useI18n } from "../i18n/useI18n";
 import { ScanEngineKind } from "../types/disk";
@@ -41,7 +42,10 @@ export function SettingsModal({
           className="px-4 py-3 border-b flex items-center justify-between"
           style={{ borderColor: "var(--border-subtle)" }}
         >
-          <h2 className="font-semibold text-[15px]">{t.settingsTitle}</h2>
+          <div className="flex items-center gap-2">
+            <img width="20" height="20" src={appIcon} alt="" style={{ imageRendering: "pixelated" }} />
+            <h2 className="font-semibold text-[15px]">{t.settingsTitle}</h2>
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -156,7 +160,7 @@ export function SettingsModal({
           className="px-4 py-3 border-t flex items-center justify-between text-[11px]"
           style={{ borderColor: "var(--border-subtle)", color: "var(--text-muted)" }}
         >
-          <span>DiskCleanupTool v0.2.0 • Rust + Tauri v2</span>
+          <span>DiskCleanupTool v0.3.0 • Rust + Tauri v2</span>
           <button
             type="button"
             onClick={onClose}

@@ -29,6 +29,8 @@ export interface TranslationDict {
 
   // Tabs
   tabTree: string;
+  viewOptions: string;
+  tools: string;
   tabSearch: string;
   tabTopFiles: string;
   tabDuplicates: string;
@@ -83,6 +85,7 @@ export interface TranslationDict {
   colCategory: string;
 
   // Empty & states
+  availableDrives: string;
   emptyTitle: string;
   emptySubtitle: string;
   selectDriveHint: string;
@@ -240,6 +243,57 @@ export interface TranslationDict {
   junk_win_old: string;
   junk_virtual_disks: string;
   junk_downloads_installers: string;
+
+  // Disk Health (S.M.A.R.T.)
+  tabHealth: string;
+  healthTitle: string;
+  healthRefresh: string;
+  healthRefreshing: string;
+  healthStatusLabel: string;
+  healthGood: string;
+  healthCaution: string;
+  healthCritical: string;
+  healthUnknown: string;
+  healthTempLabel: string;
+  healthTempHotWarn: string;
+  healthTempWarmWarn: string;
+  healthTempNormal: string;
+  healthFirmware: string;
+  healthSerial: string;
+  healthInterface: string;
+  healthStandard: string;
+  healthMediaType: string;
+  healthDriveLetters: string;
+  healthFeatures: string;
+  healthHostReads: string;
+  healthHostWrites: string;
+  healthPowerCycles: string;
+  healthPowerHours: string;
+  healthUnsafeShutdowns: string;
+  healthAvailSpare: string;
+  healthHideSerial: string;
+  healthShowSerial: string;
+  healthAutoRefresh: string;
+  healthAutoOff: string;
+  healthCopyReport: string;
+  healthReportCopied: string;
+  healthExportTxt: string;
+  healthExportJson: string;
+  healthExportSaved: string;
+  healthAdminRequired: string;
+  healthAdminBtn: string;
+  healthNoDisks: string;
+  healthAttrTableTitle: string;
+  healthOnlyWarnings: string;
+  healthAllAttrs: string;
+  healthColId: string;
+  healthColAttr: string;
+  healthColCur: string;
+  healthColWorst: string;
+  healthColThresh: string;
+  healthColValue: string;
+  healthColRaw: string;
+  healthBackHome: string;
 }
 
 const en: TranslationDict = {
@@ -259,6 +313,8 @@ const en: TranslationDict = {
   themeLight: "Light",
 
   tabTree: "Folder Tree",
+  viewOptions: "View options",
+  tools: "Tools",
   tabSearch: "Search",
   tabTopFiles: "Top Largest Files",
   tabDuplicates: "Duplicates",
@@ -309,6 +365,7 @@ const en: TranslationDict = {
   colPath: "Path",
   colCategory: "Type",
 
+  availableDrives: "Available drives",
   emptyTitle: "Select a drive or folder to analyze disk usage",
   emptySubtitle: "Largest files and folders are automatically sorted on top for fast cleanup.",
   selectDriveHint: "Pick a drive above or browse any directory.",
@@ -455,6 +512,56 @@ const en: TranslationDict = {
   junk_win_old: "Previous Windows Installation (Windows.old)",
   junk_virtual_disks: "Virtual Disks (WSL2 / Docker .vhdx)",
   junk_downloads_installers: "Large Installers & Archives in Downloads (>50 MB)",
+
+  tabHealth: "Disk Health",
+  healthTitle: "Disk Health & S.M.A.R.T. Diagnostics",
+  healthRefresh: "Refresh",
+  healthRefreshing: "Reading...",
+  healthStatusLabel: "Health Status",
+  healthGood: "Good",
+  healthCaution: "Caution",
+  healthCritical: "Critical",
+  healthUnknown: "Unknown",
+  healthTempLabel: "Temperature",
+  healthTempHotWarn: "High temperature — check cooling / airflow",
+  healthTempWarmWarn: "Warm operating temperature",
+  healthTempNormal: "Normal operating temperature",
+  healthFirmware: "Firmware",
+  healthSerial: "Serial Number",
+  healthInterface: "Interface",
+  healthStandard: "Standard",
+  healthMediaType: "Media Type",
+  healthDriveLetters: "Drive Letters",
+  healthFeatures: "Features",
+  healthHostReads: "Total Host Reads",
+  healthHostWrites: "Total Host Writes",
+  healthPowerCycles: "Power On Count",
+  healthPowerHours: "Power On Hours",
+  healthUnsafeShutdowns: "Unsafe Shutdowns",
+  healthAvailSpare: "Available Spare",
+  healthHideSerial: "Hide Serial",
+  healthShowSerial: "Show Serial",
+  healthAutoRefresh: "Auto",
+  healthAutoOff: "Off",
+  healthCopyReport: "Copy Report",
+  healthReportCopied: "S.M.A.R.T. report copied",
+  healthExportTxt: "Export TXT",
+  healthExportJson: "Export JSON",
+  healthExportSaved: "Health report saved",
+  healthAdminRequired: "Running without Administrator privileges. Elevate to read full NVMe / SATA S.M.A.R.T. telemetry.",
+  healthAdminBtn: "Run as Admin (Full S.M.A.R.T.)",
+  healthNoDisks: "No physical disks detected.",
+  healthAttrTableTitle: "S.M.A.R.T. Attributes",
+  healthOnlyWarnings: "Warnings Only",
+  healthAllAttrs: "All",
+  healthColId: "ID",
+  healthColAttr: "Attribute Name",
+  healthColCur: "Cur",
+  healthColWorst: "Worst",
+  healthColThresh: "Thresh",
+  healthColValue: "Decoded Value",
+  healthColRaw: "Raw Value (Hex)",
+  healthBackHome: "Back to Drives",
 };
 
 const vi: TranslationDict = {
@@ -474,6 +581,8 @@ const vi: TranslationDict = {
   themeLight: "Sáng",
 
   tabTree: "Cây thư mục",
+  viewOptions: "Hiển thị",
+  tools: "Công cụ",
   tabSearch: "Tìm kiếm",
   tabTopFiles: "Top File Lớn Nhất",
   tabDuplicates: "File Trùng Lặp",
@@ -524,6 +633,7 @@ const vi: TranslationDict = {
   colPath: "Đường dẫn",
   colCategory: "Loại",
 
+  availableDrives: "Ổ đĩa hiện có",
   emptyTitle: "Chọn ổ đĩa hoặc thư mục để phân tích dung lượng",
   emptySubtitle: "Mặc định sắp xếp file và thư mục lớn nhất lên trên cùng để dọn dẹp nhanh.",
   selectDriveHint: "Chọn ổ đĩa phía trên hoặc bấm Chọn thư mục.",
@@ -670,6 +780,56 @@ const vi: TranslationDict = {
   junk_win_old: "Bản cài Windows cũ (Windows.old)",
   junk_virtual_disks: "Đĩa ảo (WSL2 / Docker .vhdx)",
   junk_downloads_installers: "File cài đặt & file nén lớn trong Downloads (>50 MB)",
+
+  tabHealth: "Sức khỏe ổ đĩa",
+  healthTitle: "Phân tích Sức khỏe Ổ đĩa & S.M.A.R.T.",
+  healthRefresh: "Làm mới",
+  healthRefreshing: "Đang đọc...",
+  healthStatusLabel: "Trạng thái sức khỏe",
+  healthGood: "Tốt",
+  healthCaution: "Cảnh báo",
+  healthCritical: "Nguy hiểm",
+  healthUnknown: "Chưa rõ",
+  healthTempLabel: "Nhiệt độ",
+  healthTempHotWarn: "Nhiệt độ cao — kiểm tra tản nhiệt / luồng gió",
+  healthTempWarmWarn: "Nhiệt độ hoạt động hơi ấm",
+  healthTempNormal: "Nhiệt độ hoạt động ổn định",
+  healthFirmware: "Firmware",
+  healthSerial: "Số Sê-ri",
+  healthInterface: "Chuẩn giao tiếp",
+  healthStandard: "Tiêu chuẩn",
+  healthMediaType: "Loại ổ đĩa",
+  healthDriveLetters: "Ký tự ổ đĩa",
+  healthFeatures: "Tính năng",
+  healthHostReads: "Tổng dung lượng đọc",
+  healthHostWrites: "Tổng dung lượng ghi",
+  healthPowerCycles: "Số lần khởi động",
+  healthPowerHours: "Tổng giờ hoạt động",
+  healthUnsafeShutdowns: "Tắt nguồn đột ngột",
+  healthAvailSpare: "Vùng dự phòng còn lại",
+  healthHideSerial: "Ẩn Sê-ri",
+  healthShowSerial: "Hiện Sê-ri",
+  healthAutoRefresh: "Tự cập nhật",
+  healthAutoOff: "Tắt",
+  healthCopyReport: "Sao chép báo cáo",
+  healthReportCopied: "Đã sao chép báo cáo S.M.A.R.T.",
+  healthExportTxt: "Xuất TXT",
+  healthExportJson: "Xuất JSON",
+  healthExportSaved: "Đã lưu báo cáo sức khỏe",
+  healthAdminRequired: "Đang chạy quyền User thường. Cần quyền Administrator để đọc đầy đủ thông số S.M.A.R.T. (NVMe / SATA).",
+  healthAdminBtn: "Chạy quyền Admin (Đầy đủ S.M.A.R.T.)",
+  healthNoDisks: "Không phát hiện ổ đĩa vật lý nào.",
+  healthAttrTableTitle: "Danh sách thuộc tính S.M.A.R.T.",
+  healthOnlyWarnings: "Chỉ cảnh báo",
+  healthAllAttrs: "Tất cả",
+  healthColId: "ID",
+  healthColAttr: "Tên thuộc tính",
+  healthColCur: "Hiện tại",
+  healthColWorst: "Thấp nhất",
+  healthColThresh: "Ngưỡng",
+  healthColValue: "Giá trị giải mã",
+  healthColRaw: "Giá trị thô (Hex)",
+  healthBackHome: "Quay lại danh sách ổ đĩa",
 };
 
 const zh: TranslationDict = {
@@ -686,6 +846,8 @@ const zh: TranslationDict = {
   themeDark: "深色",
   themeLight: "浅色",
   tabTree: "目录树",
+  viewOptions: "显示选项",
+  tools: "工具",
   tabSearch: "全局搜索",
   tabTopFiles: "最大文件排行",
   tabDuplicates: "重复文件",
@@ -731,6 +893,7 @@ const zh: TranslationDict = {
   colActions: "操作",
   colPath: "路径",
   colCategory: "类型",
+  availableDrives: "可用驱动器",
   emptyTitle: "选择磁盘驱动器或文件夹以分析空间占用",
   emptySubtitle: "默认按大小降序排列，大文件和文件夹始终显示在最顶部。",
   openFile: "打开文件",
@@ -809,6 +972,8 @@ const ja: TranslationDict = {
   themeDark: "ダーク",
   themeLight: "ライト",
   tabTree: "フォルダツリー",
+  viewOptions: "表示設定",
+  tools: "ツール",
   tabSearch: "検索",
   tabTopFiles: "最大ファイル一覧",
   tabDuplicates: "重複ファイル",
@@ -854,6 +1019,7 @@ const ja: TranslationDict = {
   colActions: "操作",
   colPath: "パス",
   colCategory: "種類",
+  availableDrives: "利用可能なドライブ",
   emptyTitle: "ドライブまたはフォルダを選択して容量を分析",
   emptySubtitle: "サイズの大きい項目が常に上部に降順表示され、素早く整理できます。",
   openFile: "ファイルを開く",
@@ -932,6 +1098,8 @@ const ko: TranslationDict = {
   themeDark: "다크",
   themeLight: "라이트",
   tabTree: "폴더 트리",
+  viewOptions: "보기 설정",
+  tools: "도구",
   tabSearch: "검색",
   tabTopFiles: "대용량 파일 Top",
   tabDuplicates: "중복 파일",
@@ -974,6 +1142,7 @@ const ko: TranslationDict = {
   colActions: "작업",
   colPath: "경로",
   colCategory: "유형",
+  availableDrives: "사용 가능한 드라이브",
   emptyTitle: "디스크 사용량을 분석할 드라이브 또는 폴더를 선택하세요",
   emptySubtitle: "가장 큰 파일과 폴더가 기본적으로 상단에 내림차순 정렬됩니다.",
   openFile: "파일 열기",
@@ -1048,6 +1217,8 @@ const es: TranslationDict = {
   themeDark: "Oscuro",
   themeLight: "Claro",
   tabTree: "Árbol de carpetas",
+  viewOptions: "Opciones de vista",
+  tools: "Herramientas",
   tabSearch: "Buscar",
   tabTopFiles: "Archivos más grandes",
   tabDuplicates: "Duplicados",
@@ -1120,6 +1291,8 @@ const de: TranslationDict = {
   themeDark: "Dunkel",
   themeLight: "Hell",
   tabTree: "Ordnerbaum",
+  viewOptions: "Ansicht",
+  tools: "Werkzeuge",
   tabSearch: "Suche",
   tabTopFiles: "Größte Dateien",
   tabDuplicates: "Duplikate",
@@ -1192,6 +1365,8 @@ const fr: TranslationDict = {
   themeDark: "Sombre",
   themeLight: "Clair",
   tabTree: "Arborescence",
+  viewOptions: "Affichage",
+  tools: "Outils",
   tabSearch: "Recherche",
   tabTopFiles: "Plus gros fichiers",
   tabDuplicates: "Doublons",

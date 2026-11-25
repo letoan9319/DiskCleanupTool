@@ -11,7 +11,7 @@ import {
   ShieldBan,
   Square,
   Trash2,
-} from "lucide-react";
+} from "./PixelIcons";
 import {
   DuplicateFile,
   DuplicateGroup,
@@ -366,7 +366,7 @@ export function DuplicatesPanel({
       )}
 
       {/* Groups List */}
-      <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2.5">
+      <div className="flex-1 min-h-0 overflow-y-auto p-3 flex flex-col gap-2.5">
         {!report && !isScanning ? (
           <div
             className="flex-1 flex flex-col items-center justify-center gap-2 text-center py-16"
@@ -391,11 +391,12 @@ export function DuplicatesPanel({
             const unselectedCount = group.files.filter(
               (f) => !selectedIds.has(f.nodeId)
             ).length;
+            const primaryName = group.files[0]?.name || "";
 
             return (
               <div
                 key={group.hash}
-                className="rounded-md border overflow-hidden"
+                className="rounded-md border overflow-hidden shrink-0"
                 style={{
                   backgroundColor: "var(--bg-panel)",
                   borderColor: "var(--border-subtle)",
@@ -409,17 +410,29 @@ export function DuplicatesPanel({
                   }}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="font-mono-num font-semibold text-sky-400">
+                    <span
+                      className="font-mono-num font-semibold shrink-0"
+                      style={{ color: "var(--accent)" }}
+                    >
                       {formatBytes(group.fileSize, sizeUnit)}
                     </span>
                     <span
-                      className="font-mono-num text-[11px]"
+                      className="font-mono-num text-[11px] shrink-0"
                       style={{ color: "var(--text-muted)" }}
                     >
                       × {group.files.length}
                     </span>
+                    {primaryName && (
+                      <span
+                        className="font-semibold truncate"
+                        style={{ color: "var(--text-primary)" }}
+                        title={primaryName}
+                      >
+                        {primaryName}
+                      </span>
+                    )}
                     <span
-                      className="font-mono-num text-[10px] px-1.5 py-0.5 rounded border hidden sm:inline"
+                      className="font-mono-num text-[10px] px-1.5 py-0.5 rounded border hidden sm:inline shrink-0"
                       style={{
                         borderColor: "var(--border-subtle)",
                         color: "var(--text-muted)",
@@ -429,7 +442,10 @@ export function DuplicatesPanel({
                       #{group.hash.slice(0, 12)}
                     </span>
                   </div>
-                  <div className="font-mono-num text-[11px] font-semibold text-amber-400 shrink-0">
+                  <div
+                    className="font-mono-num text-[11px] font-semibold shrink-0"
+                    style={{ color: "var(--warning)" }}
+                  >
                     {t.dupWastedSpace}: {formatBytes(group.wastedBytes, sizeUnit)}
                   </div>
                 </div>
@@ -438,6 +454,11 @@ export function DuplicatesPanel({
                   {group.files.map((file) => {
                     const checked = selectedIds.has(file.nodeId);
                     const isSoleKeeper = !checked && unselectedCount === 1;
+                    const lastSep = Math.max(
+                      file.fullPath.lastIndexOf("\\"),
+                      file.fullPath.lastIndexOf("/")
+                    );
+                    const parentDir = lastSep > 0 ? file.fullPath.slice(0, lastSep) : "";
 
                     return (
                       <div
@@ -461,15 +482,28 @@ export function DuplicatesPanel({
                               className="w-3.5 h-3.5 accent-sky-500 cursor-pointer shrink-0"
                             />
                           )}
-                          <File className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                          <File
+                            className="w-3.5 h-3.5 shrink-0"
+                            style={{ color: "var(--accent)" }}
+                          />
                           <span
-                            className="truncate font-mono-num text-[11px]"
-                            title={file.fullPath}
+                            className="font-medium text-[12px] shrink-0 max-w-[35%] truncate"
+                            style={{ color: "var(--text-primary)" }}
+                            title={file.name}
                           >
-                            {file.fullPath}
+                            {file.name}
                           </span>
+                          {parentDir && (
+                            <span
+                              className="truncate font-mono-num text-[11px]"
+                              style={{ color: "var(--text-muted)" }}
+                              title={file.fullPath}
+                            >
+                              {parentDir}
+                            </span>
+                          )}
                           {isSoleKeeper && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 shrink-0">
                               {t.dupKeepBadge}
                             </span>
                           )}

@@ -124,7 +124,10 @@ pub fn is_elevated() -> bool {
 }
 
 #[cfg(windows)]
-pub fn relaunch_as_admin(target_path: Option<String>) -> Result<(), String> {
+pub fn relaunch_as_admin(
+    target_path: Option<String>,
+    initial_tab: Option<String>,
+) -> Result<(), String> {
     use std::ffi::OsStr;
     use std::os::windows::ffi::OsStrExt;
     use windows::core::PCWSTR;
@@ -135,9 +138,14 @@ pub fn relaunch_as_admin(target_path: Option<String>) -> Result<(), String> {
     let exe_path = std::env::current_exe().map_err(|e| e.to_string())?;
     let exe_str = exe_path.to_string_lossy().to_string();
 
-    let params_str = target_path
-        .map(|p| format!("\"{}\"", p.replace('"', "")))
-        .unwrap_or_default();
+    let mut param_parts = Vec::new();
+    if let Some(tab) = initial_tab.filter(|s| !s.trim().is_empty()) {
+        param_parts.push(format!("--tab={}", tab.trim().replace('"', "")));
+    }
+    if let Some(p) = target_path.filter(|s| !s.trim().is_empty()) {
+        param_parts.push(format!("\"{}\"", p.replace('"', "")));
+    }
+    let params_str = param_parts.join(" ");
 
     let verb_w: Vec<u16> = OsStr::new("runas\0").encode_wide().collect();
     let file_w: Vec<u16> = OsStr::new(&exe_str)
@@ -172,7 +180,10 @@ pub fn relaunch_as_admin(target_path: Option<String>) -> Result<(), String> {
 }
 
 #[cfg(not(windows))]
-pub fn relaunch_as_admin(_target_path: Option<String>) -> Result<(), String> {
+pub fn relaunch_as_admin(
+    _target_path: Option<String>,
+    _initial_tab: Option<String>,
+) -> Result<(), String> {
     Err("Admin elevation is only supported on Windows".to_string())
 }
 

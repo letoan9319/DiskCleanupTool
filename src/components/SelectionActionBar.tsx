@@ -1,4 +1,4 @@
-import { Trash2, X, Flame } from "lucide-react";
+import { Trash2, X, Flame } from "./PixelIcons";
 import { SizeUnit, formatBytes, formatNumber } from "../types/disk";
 import { useI18n } from "../i18n/useI18n";
 

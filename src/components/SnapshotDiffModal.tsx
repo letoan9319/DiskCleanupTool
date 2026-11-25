@@ -8,7 +8,7 @@ import {
   TrendingDown,
   TrendingUp,
   X,
-} from "lucide-react";
+} from "./PixelIcons";
 import {
   SizeUnit,
   SnapshotDiffReport,

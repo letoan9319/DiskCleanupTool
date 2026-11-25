@@ -29,6 +29,7 @@ export interface SystemInfoDto {
   isAdmin: boolean;
   contextMenuEnabled: boolean;
   initialPath: string | null;
+  initialTab?: string | null;
 }
 
 export interface NodeDto {
@@ -237,6 +238,58 @@ export interface MoveReport {
   updatedRootAllocated: number;
   updatedRootFiles: number;
   updatedRootDirs: number;
+}
+
+export type HealthStatus = "good" | "caution" | "critical" | "unknown";
+export type SmartAttrStatus = "good" | "caution" | "critical" | "neutral";
+export type SmartProtocol = "nvme" | "ata" | "basic_only";
+
+export interface SmartAttribute {
+  id: number;
+  idHex: string;
+  name: string;
+  status: SmartAttrStatus;
+  current: number | null;
+  worst: number | null;
+  threshold: number | null;
+  rawHex: string;
+  rawValue: number;
+  decodedValue: string;
+}
+
+export interface PhysicalDiskHealth {
+  diskIndex: number;
+  model: string;
+  serialNumber: string;
+  firmware: string;
+  capacityBytes: number;
+  driveLetters: string[];
+  interfaceType: string;
+  standard: string;
+  mediaType: string;
+  rotationRate: number | null;
+  features: string[];
+  protocol: SmartProtocol;
+  healthStatus: HealthStatus;
+  healthPercent: number | null;
+  temperatureC: number | null;
+  totalHostReadsBytes: number | null;
+  totalHostWritesBytes: number | null;
+  powerOnCount: number | null;
+  powerOnHours: number | null;
+  unsafeShutdowns: number | null;
+  mediaErrors: number | null;
+  availableSparePct: number | null;
+  smartAvailable: boolean;
+  requiresAdminForSmart: boolean;
+  diagnosticNotes: string[];
+  attributes: SmartAttribute[];
+}
+
+export interface DiskHealthReport {
+  isAdmin: boolean;
+  disks: PhysicalDiskHealth[];
+  collectedAtTs: number;
 }
 
 const KB = 1024;

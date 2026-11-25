@@ -20,10 +20,30 @@ fn extract_path_from_args(args: &[String]) -> Option<String> {
     })
 }
 
+fn extract_tab_from_args(args: &[String]) -> Option<String> {
+    for (idx, arg) in args.iter().enumerate().skip(1) {
+        if let Some(val) = arg.strip_prefix("--tab=") {
+            let trimmed = val.trim().trim_matches('"');
+            if !trimmed.is_empty() {
+                return Some(trimmed.to_string());
+            }
+        } else if arg == "--tab" {
+            if let Some(next) = args.get(idx + 1) {
+                let trimmed = next.trim().trim_matches('"');
+                if !trimmed.is_empty() {
+                    return Some(trimmed.to_string());
+                }
+            }
+        }
+    }
+    None
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let args: Vec<String> = std::env::args().collect();
     let initial_path = extract_path_from_args(&args);
+    let initial_tab = extract_tab_from_args(&args);
 
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -38,7 +58,13 @@ pub fn run() {
                 let _ = app.emit("open-scan-path", path);
             }
         }))
-        .manage(AppState::new(initial_path))
+        .manage(AppState::new(initial_path, initial_tab))
+        .setup(|app| {
+            if let Some(win) = app.get_webview_window("main") {
+                let _ = win.set_icon(tauri::include_image!("icons/icon.png"));
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             commands::get_system_info,
             commands::list_drives,
@@ -72,6 +98,8 @@ pub fn run() {
             commands::export_report,
             commands::save_snapshot,
             commands::compare_snapshot,
+            commands::get_disk_health,
+            commands::export_disk_health,
         ])
         .run(tauri::generate_context!())
         .expect("error while running DiskCleanupTool");

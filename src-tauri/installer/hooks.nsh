@@ -1,5 +1,6 @@
 ; DiskCleanupTool Windows NSIS Installer Hooks
-; Registers / cleans up Windows Explorer context menu entries in HKCU (safe for both per-user and per-machine installs)
+; Registers / cleans up Windows Explorer context menu entries in HKCU cleanly
+; (No dynamic System::Call or LOLBin executables like ie4uinit.exe to avoid AV behavioral false positives)
 
 !macro NSIS_HOOK_POSTINSTALL
   WriteRegStr HKCU "Software\Classes\Directory\shell\DiskCleanupTool" "" "Scan with DiskCleanupTool"

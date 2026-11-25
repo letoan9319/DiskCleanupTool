@@ -1,7 +1,7 @@
 {
   "name": "disk-cleanup-tool",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -14,7 +14,7 @@
     "@tauri-apps/api": "^2.5.0",
     "@tauri-apps/plugin-dialog": "^2.2.0",
     "@tauri-apps/plugin-opener": "^2.2.0",
-    "lucide-react": "^0.511.0",
+    "pixelarticons": "1.8.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

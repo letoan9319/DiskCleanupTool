@@ -7,7 +7,7 @@ import {
   Info,
   Terminal,
   Trash2,
-} from "lucide-react";
+} from "./PixelIcons";
 import {
   BreadcrumbItem,
   CATEGORY_COLORS,

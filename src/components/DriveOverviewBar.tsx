@@ -1,4 +1,4 @@
-import { Cpu, Zap } from "lucide-react";
+import { Cpu, Zap } from "./PixelIcons";
 import {
   DriveInfo,
   ScanProgress,
@@ -136,13 +136,9 @@ export function DriveOverviewBar({
       </div>
 
       {activeDrive && (
-        <div className="flex items-center gap-2 text-[11px] font-mono-num">
-          <span style={{ color: "var(--text-muted)" }}>
-            {activeDrive.path} {t.driveUsed}:{" "}
-            {formatBytes(activeDrive.usedBytes, sizeUnit)} /{" "}
-            {formatBytes(activeDrive.totalBytes, sizeUnit)} ({t.freeSpace}:{" "}
-            {formatBytes(activeDrive.freeBytes, sizeUnit)})
-          </span>
+        <div className="capacity-summary" title={`${activeDrive.path} · ${t.driveUsed}: ${formatBytes(activeDrive.usedBytes, sizeUnit)} / ${formatBytes(activeDrive.totalBytes, sizeUnit)}`}>
+          <strong>{activeDrive.path}</strong>
+          <span>{t.freeSpace}: {formatBytes(activeDrive.freeBytes, sizeUnit)}</span>
           <div
             className="w-24 h-2 rounded-full overflow-hidden"
             style={{ backgroundColor: "var(--bar-track)" }}

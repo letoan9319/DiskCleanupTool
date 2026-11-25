@@ -47,10 +47,10 @@ jobs:
       - name: Run disk-core unit tests
         run: cargo test -p disk-core
 
-      - name: Build Tauri NSIS installer
-        run: npm run tauri build -- --bundles nsis
+      - name: Build Tauri Windows installers (MSI + NSIS)
+        run: npm run tauri build -- --bundles msi,nsis
 
-      - name: Package installer, portable ZIP, and SHA256SUMS
+      - name: Package installers, portable ZIP, and SHA256SUMS
         id: package
         run: |
           $ErrorActionPreference = 'Stop'
@@ -70,6 +70,9 @@ jobs:
             throw "NSIS installer not found in $nsisDir"
           }
 
+          $msiDir = 'target/release/bundle/msi'
+          $msiFile = Get-ChildItem -Path $msiDir -Filter 'DiskCleanupTool_*_x64*.msi' -ErrorAction SilentlyContinue | Select-Object -First 1
+
           $exePath = 'target/release/DiskCleanupTool.exe'
           if (-not (Test-Path $exePath)) {
             throw "Release binary not found at $exePath"
@@ -81,13 +84,19 @@ jobs:
           if (Test-Path $portableDir) { Remove-Item -Recurse -Force $portableDir }
           New-Item -ItemType Directory -Path $stagingDir, $portableDir | Out-Null
 
-          # Copy versioned NSIS installer
+          # Copy versioned NSIS & MSI installers
           $versionedInstallerPath = Join-Path $stagingDir $installerFile.Name
           Copy-Item -Path $installerFile.FullName -Destination $versionedInstallerPath -Force
+          if ($msiFile) {
+            Copy-Item -Path $msiFile.FullName -Destination (Join-Path $stagingDir $msiFile.Name) -Force
+          }
 
           # Build portable ZIP
           Copy-Item -Path $exePath -Destination $portableDir -Force
           Copy-Item -Path 'README.md' -Destination $portableDir -Force
+          $portableDocsDir = Join-Path $portableDir 'docs'
+          New-Item -ItemType Directory -Path $portableDocsDir | Out-Null
+          Copy-Item -LiteralPath 'docs/screenshots' -Destination $portableDocsDir -Recurse
           Copy-Item -Path 'LICENSE' -Destination $portableDir -Force
           if (Test-Path 'target/release/WebView2Loader.dll') {
             Copy-Item -Path 'target/release/WebView2Loader.dll' -Destination $portableDir -Force
@@ -98,6 +107,9 @@ jobs:
           # For rolling main/workflow_dispatch builds, also provide stable 'latest' filenames
           if (-not $isVersionTag) {
             Copy-Item -Path $versionedInstallerPath -Destination (Join-Path $stagingDir 'DiskCleanupTool-latest-x64-setup.exe') -Force
+            if ($msiFile) {
+              Copy-Item -Path $msiFile.FullName -Destination (Join-Path $stagingDir 'DiskCleanupTool-latest-x64.msi') -Force
+            }
             Copy-Item -Path $portableZipPath -Destination (Join-Path $stagingDir 'DiskCleanupTool-latest-portable.zip') -Force
           }
 

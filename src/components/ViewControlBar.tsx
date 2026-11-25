@@ -1,3 +1,4 @@
+import { useEffect, useRef, type ReactNode } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -9,7 +10,7 @@ import {
   ListTree,
   Minimize2,
   Trash2,
-} from "lucide-react";
+} from "./PixelIcons";
 import {
   DisplayMode,
   RecycleBinInfo,
@@ -18,6 +19,32 @@ import {
   formatNumber,
 } from "../types/disk";
 import { useI18n } from "../i18n/useI18n";
+
+function ToolbarDropdown({ label, children }: { label: string; children: ReactNode }) {
+  const ref = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    function dismiss(event: PointerEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node)) ref.current.open = false;
+    }
+    document.addEventListener("pointerdown", dismiss);
+    return () => document.removeEventListener("pointerdown", dismiss);
+  }, []);
+  return (
+    <details ref={ref} className="toolbar-dropdown"
+      onBlur={event => {
+        if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false;
+      }}
+      onKeyDown={event => {
+        if (event.key === "Escape") {
+          event.currentTarget.open = false;
+          event.currentTarget.querySelector("summary")?.focus();
+        }
+      }}>
+      <summary>{label}</summary>
+      <div className="toolbar-sheet">{children}</div>
+    </details>
+  );
+}
 
 interface ViewControlBarProps {
   canBack: boolean;
@@ -78,7 +105,7 @@ export function ViewControlBar({
 
   return (
     <div
-      className="px-3 py-1.5 border-b flex items-center gap-2 flex-wrap text-[11px] shrink-0"
+      className="results-toolbar px-3 py-1.5 border-b flex items-center gap-2 flex-wrap text-[11px] shrink-0"
       style={{
         backgroundColor: "var(--bg-panel)",
         borderColor: "var(--border-subtle)",
@@ -133,6 +160,7 @@ export function ViewControlBar({
         </button>
       </div>
 
+      <ToolbarDropdown label={t.viewOptions}>
       {/* Display Mode Segmented Control */}
       <div
         className="flex items-center rounded border overflow-hidden shrink-0"
@@ -252,8 +280,14 @@ export function ViewControlBar({
         <span>{splitView ? t.splitView : t.treeOnly}</span>
       </button>
 
+      </ToolbarDropdown>
       {/* Right-aligned Quick Actions & Recycle Bin */}
-      <div className="ml-auto flex items-center gap-1.5 flex-wrap">
+      <div className="ml-auto">
+        <ToolbarDropdown label={t.tools}>
+        <div className="tool-actions" onClick={event => {
+          const menu = event.currentTarget.closest("details");
+          if (menu) menu.open = false;
+        }}>
         <button
           type="button"
           onClick={() => onExport("csv")}
@@ -266,7 +300,7 @@ export function ViewControlBar({
           title={t.exportCsv}
         >
           <Download className="w-3 h-3" />
-          <span>CSV</span>
+          <span>{t.exportCsv}</span>
         </button>
 
         <button
@@ -281,7 +315,7 @@ export function ViewControlBar({
           title={t.exportJson}
         >
           <FileJson className="w-3 h-3" />
-          <span>JSON</span>
+          <span>{t.exportJson}</span>
         </button>
 
         <button
@@ -325,6 +359,8 @@ export function ViewControlBar({
               : "—"}
           </span>
         </button>
+        </div>
+        </ToolbarDropdown>
       </div>
     </div>
   );

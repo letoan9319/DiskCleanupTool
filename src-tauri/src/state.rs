@@ -11,10 +11,11 @@ pub struct AppState {
     pub dup_cancel_flag: Mutex<Option<Arc<AtomicBool>>>,
     pub active_scan_id: AtomicU64,
     pub initial_path: Mutex<Option<String>>,
+    pub initial_tab: Mutex<Option<String>>,
 }
 
 impl AppState {
-    pub fn new(initial_path: Option<String>) -> Self {
+    pub fn new(initial_path: Option<String>, initial_tab: Option<String>) -> Self {
         Self {
             arena: Arc::new(RwLock::new(None)),
             summary: Arc::new(RwLock::new(None)),
@@ -22,6 +23,7 @@ impl AppState {
             dup_cancel_flag: Mutex::new(None),
             active_scan_id: AtomicU64::new(0),
             initial_path: Mutex::new(initial_path),
+            initial_tab: Mutex::new(initial_tab),
         }
     }
 }

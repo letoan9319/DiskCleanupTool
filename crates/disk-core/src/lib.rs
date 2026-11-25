@@ -6,6 +6,7 @@ pub mod model;
 pub mod safety;
 pub mod scanner;
 pub mod search;
+pub mod smart;
 pub mod snapshot;
 
 #[cfg(windows)]
