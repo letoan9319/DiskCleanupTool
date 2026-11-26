@@ -8,7 +8,7 @@
 
 *Screenshots show the Windows-style interface with sample drive, folder, and S.M.A.R.T. data.*
 
-The default branch uses Segoe UI and the Windows system icon font (Segoe Fluent Icons on Windows 11 and Segoe MDL2 Assets on Windows 10). Choose **System**, **Light**, or **Dark** in **Settings**. The original pixel interface and its README are available on the [pixel UI branch](https://github.com/letoan9319/DiskCleanupTool/tree/codex/pixel-ui).
+The default branch uses Segoe UI and the Windows system icon font (Segoe Fluent Icons on Windows 11 and Segoe MDL2 Assets on Windows 10). Choose **System**, **Light**, or **Dark** in **Settings**. The original pixel interface and its README are available on the [pixel UI branch](https://github.com/letoan9319/DiskCleanupTool/tree/pixel-ui).
 
 ## Download for Windows
 
