@@ -21,7 +21,7 @@ import {
   Terminal,
   Trash2,
   X,
-} from "./PixelIcons";
+} from "./WindowsIcons";
 import {
   BreadcrumbItem,
   ChildrenPage,

@@ -8,7 +8,7 @@ import {
   TrendingDown,
   TrendingUp,
   X,
-} from "./PixelIcons";
+} from "./WindowsIcons";
 import {
   SizeUnit,
   SnapshotDiffReport,

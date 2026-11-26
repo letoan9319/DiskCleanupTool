@@ -9,7 +9,7 @@ import {
   ShieldAlert,
   Square,
   Zap,
-} from "./PixelIcons";
+} from "./WindowsIcons";
 import { DriveInfo, ScanEngineKind } from "../types/disk";
 import { useI18n } from "../i18n/useI18n";
 

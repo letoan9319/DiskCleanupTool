@@ -11,7 +11,7 @@ import {
   ShieldBan,
   Square,
   Trash2,
-} from "./PixelIcons";
+} from "./WindowsIcons";
 import {
   DuplicateFile,
   DuplicateGroup,

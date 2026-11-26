@@ -12,7 +12,7 @@ import {
   Sparkles,
   Terminal,
   Trash2,
-} from "./PixelIcons";
+} from "./WindowsIcons";
 import {
   CATEGORY_COLORS,
   CategoryStat,

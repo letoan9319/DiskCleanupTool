@@ -12,7 +12,7 @@ import {
   ShieldBan,
   Trash2,
   X,
-} from "./PixelIcons";
+} from "./WindowsIcons";
 import {
   CATEGORY_COLORS,
   NodeDto,

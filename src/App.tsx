@@ -1,4 +1,3 @@
-import driveArt from "./assets/disk-array.png";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -9,13 +8,15 @@ import {
   FileSpreadsheet,
   FolderTree,
   FolderOpen,
+  HardDrive,
+  ChevronRight,
   Heart,
   LayoutGrid,
   Search,
   Sparkles,
   Trash2,
   X,
-} from "./components/PixelIcons";
+} from "./components/WindowsIcons";
 import {
   BreadcrumbItem,
   DeletePreview,
@@ -52,17 +53,21 @@ import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
 import { SnapshotDiffModal } from "./components/SnapshotDiffModal";
 import { SettingsModal } from "./components/SettingsModal";
 
+type Appearance = "system" | "light" | "dark";
+
 type ActiveTab = "tree" | "search" | "top_files" | "duplicates" | "junk" | "treemap" | "health";
 
 function DiskCleanupShell() {
   const { t } = useI18n();
 
-  const [theme, setTheme] = useState<"dark" | "light">(() => {
+  const [theme, setTheme] = useState<Appearance>(() => {
     try {
-      return localStorage.getItem("diskcleanup.theme") === "dark" ? "dark" : "light";
+      const saved = localStorage.getItem("diskcleanup.theme");
+      if (saved === "light" || saved === "dark") return saved;
     } catch {
-      return "light";
+      // Use the current system setting.
     }
+    return "system";
   });
   const [preferredEngine, setPreferredEngine] = useState<ScanEngineKind>("auto");
 
@@ -132,13 +137,20 @@ function DiskCleanupShell() {
   }, []);
 
   useEffect(() => {
-    document.documentElement.classList.toggle("light", theme === "light");
-    document.documentElement.classList.toggle("dark", theme === "dark");
+    const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
+    function updateTheme() {
+      const dark = theme === "dark" || (theme === "system" && systemTheme.matches);
+      document.documentElement.classList.toggle("light", !dark);
+      document.documentElement.classList.toggle("dark", dark);
+    }
+    updateTheme();
+    systemTheme.addEventListener("change", updateTheme);
     try {
       localStorage.setItem("diskcleanup.theme", theme);
     } catch {
       // ignore
     }
+    return () => systemTheme.removeEventListener("change", updateTheme);
   }, [theme]);
 
   // Ctrl+K search focus shortcut
@@ -810,7 +822,7 @@ function DiskCleanupShell() {
       {/* Tabs */}
       {summary && (
         <nav
-          className="px-3 border-b flex items-center gap-1 shrink-0 overflow-x-auto"
+          className="workspace-tabs px-3 border-b flex items-center gap-1 shrink-0 overflow-x-auto"
           style={{
             backgroundColor: "var(--bg-panel)",
             borderColor: "var(--border-subtle)",
@@ -870,33 +882,30 @@ function DiskCleanupShell() {
         ) : !summary ? (
           <section className="home-screen">
             <div className="home-content">
-              <div className="welcome-panel">
-                <div className="welcome-copy">
-                  <h1>{t.emptyTitle}</h1>
-                  <p>{t.emptySubtitle}</p>
-                  <div className="flex items-center gap-2.5 flex-wrap">
-                    <button type="button" className="folder-action" onClick={handleBrowseFolder} disabled={isScanning}>
-                      <FolderOpen className="w-4 h-4" />{t.browseFolder}
-                    </button>
-                    <button
-                      type="button"
-                      className="folder-action"
-                      style={{
-                        background: "var(--bg-elevated)",
-                        color: "var(--text-primary)",
-                      }}
-                      onClick={() => {
-                        setActiveTab("health");
-                        if (!diskHealth) void refreshDiskHealth();
-                      }}
-                    >
-                      <Heart className="w-4 h-4 text-rose-400" />
-                      {t.tabHealth}
-                      {maxTempC !== null ? ` (${maxTempC}°C)` : ""}
-                    </button>
-                  </div>
+              <div className="welcome-copy">
+                <h1>{t.emptyTitle}</h1>
+                <p>{t.emptySubtitle}</p>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <button type="button" className="folder-action" onClick={handleBrowseFolder} disabled={isScanning}>
+                    <FolderOpen className="w-4 h-4" />{t.browseFolder}
+                  </button>
+                  <button
+                    type="button"
+                    className="folder-action"
+                    style={{
+                      background: "var(--bg-elevated)",
+                      color: "var(--text-primary)",
+                    }}
+                    onClick={() => {
+                      setActiveTab("health");
+                      if (!diskHealth) void refreshDiskHealth();
+                    }}
+                  >
+                    <Heart className="w-4 h-4 text-rose-400" />
+                    {t.tabHealth}
+                    {maxTempC !== null ? ` (${maxTempC}°C)` : ""}
+                  </button>
                 </div>
-                <div className="disk-scene" aria-hidden="true"><img src={driveArt} alt="" /></div>
               </div>
             {drives.length > 0 && (
               <>
@@ -917,15 +926,12 @@ function DiskCleanupShell() {
                         void startScan(d.path);
                       }}
                       disabled={isScanning}
-                      className="drive-card p-3 border text-left flex flex-col gap-2 hover:border-sky-500/60 cursor-pointer transition-colors"
-                      style={{
-                        backgroundColor: "var(--bg-panel)",
-                        borderColor: "var(--border-subtle)",
-                      }}
+                      className="drive-card text-left flex flex-col gap-2.5"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-[13px] truncate">
-                          {d.path} {d.label ? `(${d.label})` : ""}
+                        <span className="drive-name">
+                          <HardDrive className="w-5 h-5" />
+                          <strong className="truncate">{d.label ? `${d.label} (${d.path.slice(0, 2)})` : d.path}</strong>
                         </span>
                         <div className="flex items-center gap-1 shrink-0">
                           {dh && (dh.pct !== null || dh.tempC !== null) && (
@@ -955,6 +961,7 @@ function DiskCleanupShell() {
                           >
                             {d.fsType || d.driveType}
                           </span>
+                          <ChevronRight className="w-3 h-3 ml-2" />
                         </div>
                       </div>
                       <div

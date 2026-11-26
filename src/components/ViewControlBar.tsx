@@ -10,7 +10,7 @@ import {
   ListTree,
   Minimize2,
   Trash2,
-} from "./PixelIcons";
+} from "./WindowsIcons";
 import {
   DisplayMode,
   RecycleBinInfo,

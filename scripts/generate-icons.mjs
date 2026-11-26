@@ -59,48 +59,46 @@ function encodePng(width, height, rgba) {
   ]);
 }
 
-// Crisp 16x16 pixel-art drive silhouette matching the Retro-Sky UI
-const sprite = [
-  "................",
-  ".....########...",
-  "....#wwwwwwwb#..",
-  "....#wllllllb#..",
-  "...#wlllllllb#..",
-  "...#wlllllllb#..",
-  "..#wlllllllb##..",
-  "..#wwwwwwwwww#..",
-  ".##############.",
-  ".#bbbbbbbbbbbb#.",
-  ".#b####bbggbgb#.",
-  ".#bbbbbbbbbbbb#.",
-  ".##############.",
-  "..##........##..",
-  "................",
-  "................",
-];
+// Draw a drive on a rounded blue tile, using a 64-unit coordinate system.
+function insideRoundedRect(x, y, left, top, right, bottom, radius) {
+  const dx = x - Math.max(left + radius, Math.min(x, right - radius));
+  const dy = y - Math.max(top + radius, Math.min(y, bottom - radius));
+  return dx * dx + dy * dy <= radius * radius;
+}
 
-const palette = {
-  "#": [27, 57, 106],
-  w: [231, 249, 255],
-  l: [143, 208, 251],
-  b: [74, 130, 206],
-  g: [139, 255, 215],
-};
+function iconColor(x, y) {
+  if (!insideRoundedRect(x, y, 3, 3, 61, 61, 14)) return null;
+  if (insideRoundedRect(x, y, 12, 18, 52, 48, 6)) {
+    if (insideRoundedRect(x, y, 16, 35, 48, 45, 3)) {
+      if ((x - 43) ** 2 + (y - 40) ** 2 < 5) return [132, 229, 203];
+      if (insideRoundedRect(x, y, 20, 39, 32, 41, 1)) return [173, 207, 239];
+      return [23, 60, 103];
+    }
+    return y < 34 ? [249, 252, 255] : [198, 221, 243];
+  }
+  return [Math.round(22 + (64 - y) * 0.54), Math.round(91 + (64 - y) * 0.89), 205];
+}
 
 function renderIcon(size) {
   const pixels = Buffer.alloc(size * size * 4);
+  const samples = 4;
   for (let y = 0; y < size; y++) {
-    const sy = Math.min(15, Math.floor((y * 16) / size));
     for (let x = 0; x < size; x++) {
-      const sx = Math.min(15, Math.floor((x * 16) / size));
-      const color = palette[sprite[sy][sx]];
-      if (color) {
-        const off = (y * size + x) * 4;
-        pixels[off] = color[0];
-        pixels[off + 1] = color[1];
-        pixels[off + 2] = color[2];
-        pixels[off + 3] = 255;
+      const totals = [0, 0, 0];
+      let covered = 0;
+      for (let row = 0; row < samples; row++) {
+        for (let col = 0; col < samples; col++) {
+          const color = iconColor((x + (col + 0.5) / samples) * 64 / size,
+            (y + (row + 0.5) / samples) * 64 / size);
+          if (!color) continue;
+          covered++;
+          for (let channel = 0; channel < 3; channel++) totals[channel] += color[channel];
+        }
       }
+      if (!covered) continue;
+      const offset = (y * size + x) * 4;
+      pixels.set(totals.map(total => Math.round(total / covered)), offset);
+      pixels[offset + 3] = Math.round(255 * covered / (samples * samples));
     }
   }
   return pixels;

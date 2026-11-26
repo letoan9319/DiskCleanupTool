@@ -14,7 +14,7 @@ import {
   Heart,
   RefreshCw,
   ShieldAlert,
-} from "./PixelIcons";
+} from "./WindowsIcons";
 import {
   DiskHealthReport,
   HealthStatus,

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, ShieldBan, Trash2, Flame, X, Folder, File } from "./PixelIcons";
+import { AlertTriangle, ShieldBan, Trash2, Flame, X, Folder, File } from "./WindowsIcons";
 import { DeletePreview, SizeUnit, formatBytes } from "../types/disk";
 import { useI18n } from "../i18n/useI18n";
 

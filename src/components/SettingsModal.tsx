@@ -1,5 +1,5 @@
 import appIcon from "../../src-tauri/icons/32x32.png";
-import { X } from "./PixelIcons";
+import { X } from "./WindowsIcons";
 import { LANGUAGES, LangCode } from "../i18n/translations";
 import { useI18n } from "../i18n/useI18n";
 import { ScanEngineKind } from "../types/disk";
@@ -7,8 +7,8 @@ import { ScanEngineKind } from "../types/disk";
 interface SettingsModalProps {
   open: boolean;
   onClose: () => void;
-  theme: "dark" | "light";
-  onChangeTheme: (theme: "dark" | "light") => void;
+  theme: "system" | "dark" | "light";
+  onChangeTheme: (theme: "system" | "dark" | "light") => void;
   contextMenuEnabled: boolean;
   onToggleContextMenu: (enabled: boolean) => void;
   preferredEngine: ScanEngineKind;
@@ -43,7 +43,7 @@ export function SettingsModal({
           style={{ borderColor: "var(--border-subtle)" }}
         >
           <div className="flex items-center gap-2">
-            <img width="20" height="20" src={appIcon} alt="" style={{ imageRendering: "pixelated" }} />
+            <img width="20" height="20" src={appIcon} alt="" />
             <h2 className="font-semibold text-[15px]">{t.settingsTitle}</h2>
           </div>
           <button
@@ -85,31 +85,20 @@ export function SettingsModal({
             <label className="text-[12px] font-medium" style={{ color: "var(--text-secondary)" }}>
               {t.themeLabel}
             </label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => onChangeTheme("dark")}
-                className="h-9 rounded border text-[12px] font-medium cursor-pointer"
-                style={{
-                  backgroundColor: theme === "dark" ? "var(--bg-selected)" : "var(--bg-elevated)",
-                  borderColor: theme === "dark" ? "var(--accent)" : "var(--border-subtle)",
-                  color: theme === "dark" ? "var(--accent)" : "var(--text-secondary)",
-                }}
-              >
-                {t.themeDark}
-              </button>
-              <button
-                type="button"
-                onClick={() => onChangeTheme("light")}
-                className="h-9 rounded border text-[12px] font-medium cursor-pointer"
-                style={{
-                  backgroundColor: theme === "light" ? "var(--bg-selected)" : "var(--bg-elevated)",
-                  borderColor: theme === "light" ? "var(--accent)" : "var(--border-subtle)",
-                  color: theme === "light" ? "var(--accent)" : "var(--text-secondary)",
-                }}
-              >
-                {t.themeLight}
-              </button>
+            <div className="grid grid-cols-3 gap-2">
+              {(["system", "light", "dark"] as const).map((option) => (
+                <button key={option} type="button" onClick={() => onChangeTheme(option)}
+                  aria-pressed={theme === option}
+                  className="h-9 rounded border text-[12px] font-medium cursor-pointer"
+                  style={{
+                    backgroundColor: theme === option ? "var(--bg-selected)" : "var(--bg-elevated)",
+                    borderColor: theme === option ? "var(--accent)" : "var(--border-subtle)",
+                    color: theme === option ? "var(--accent)" : "var(--text-secondary)",
+                  }}
+                >
+                  {{ system: t.themeSystem, dark: t.themeDark, light: t.themeLight }[option]}
+                </button>
+              ))}
             </div>
           </div>
 

@@ -1,4 +1,4 @@
-import { Cpu, Zap } from "./PixelIcons";
+import { Cpu, Zap } from "./WindowsIcons";
 import {
   DriveInfo,
   ScanProgress,

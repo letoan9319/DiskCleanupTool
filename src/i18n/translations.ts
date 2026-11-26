@@ -26,6 +26,7 @@ export interface TranslationDict {
   settings: string;
   themeDark: string;
   themeLight: string;
+  themeSystem: string;
 
   // Tabs
   tabTree: string;
@@ -311,6 +312,7 @@ const en: TranslationDict = {
   settings: "Settings",
   themeDark: "Dark",
   themeLight: "Light",
+  themeSystem: "System",
 
   tabTree: "Folder Tree",
   viewOptions: "View options",
@@ -579,6 +581,7 @@ const vi: TranslationDict = {
   settings: "Cài đặt",
   themeDark: "Tối",
   themeLight: "Sáng",
+  themeSystem: "Theo hệ thống",
 
   tabTree: "Cây thư mục",
   viewOptions: "Hiển thị",
@@ -845,6 +848,7 @@ const zh: TranslationDict = {
   settings: "设置",
   themeDark: "深色",
   themeLight: "浅色",
+  themeSystem: "跟随系统",
   tabTree: "目录树",
   viewOptions: "显示选项",
   tools: "工具",
@@ -971,6 +975,7 @@ const ja: TranslationDict = {
   settings: "設定",
   themeDark: "ダーク",
   themeLight: "ライト",
+  themeSystem: "システムに従う",
   tabTree: "フォルダツリー",
   viewOptions: "表示設定",
   tools: "ツール",
@@ -1097,6 +1102,7 @@ const ko: TranslationDict = {
   settings: "설정",
   themeDark: "다크",
   themeLight: "라이트",
+  themeSystem: "시스템 설정",
   tabTree: "폴더 트리",
   viewOptions: "보기 설정",
   tools: "도구",
@@ -1216,6 +1222,7 @@ const es: TranslationDict = {
   settings: "Configuración",
   themeDark: "Oscuro",
   themeLight: "Claro",
+  themeSystem: "Sistema",
   tabTree: "Árbol de carpetas",
   viewOptions: "Opciones de vista",
   tools: "Herramientas",
@@ -1290,6 +1297,7 @@ const de: TranslationDict = {
   settings: "Einstellungen",
   themeDark: "Dunkel",
   themeLight: "Hell",
+  themeSystem: "System",
   tabTree: "Ordnerbaum",
   viewOptions: "Ansicht",
   tools: "Werkzeuge",
@@ -1364,6 +1372,7 @@ const fr: TranslationDict = {
   settings: "Paramètres",
   themeDark: "Sombre",
   themeLight: "Clair",
+  themeSystem: "Système",
   tabTree: "Arborescence",
   viewOptions: "Affichage",
   tools: "Outils",

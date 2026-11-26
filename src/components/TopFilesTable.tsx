@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { invoke } from "@tauri-apps/api/core";
-import { ExternalLink, File, FolderOpen, ShieldBan, Trash2 } from "./PixelIcons";
+import { ExternalLink, File, FolderOpen, ShieldBan, Trash2 } from "./WindowsIcons";
 import {
   CATEGORY_COLORS,
   FileCategory,

@@ -7,7 +7,7 @@ import {
   Info,
   Terminal,
   Trash2,
-} from "./PixelIcons";
+} from "./WindowsIcons";
 import {
   BreadcrumbItem,
   CATEGORY_COLORS,

@@ -1,12 +1,14 @@
 # ![DiskCleanupTool](docs/screenshots/diskcleanuptool-wordmark.png)
 
-**A Windows utility for finding what takes up disk space, reviewing cleanup candidates, and checking physical drive health.** Built with Rust, Tauri 2, and React, with a pixel-style interface, light and dark themes, and eight UI languages.
+**A Windows utility for finding what takes up disk space, reviewing cleanup candidates, and checking physical drive health.** Built with Rust, Tauri 2, and React, with a Windows Fluent-style interface, system icons, and eight UI languages.
 
 [Download for Windows](#download-for-windows) · [Quick start](#quick-start) · [Disk health](#disk-health) · [Build from source](#build-from-source)
 
-![DiskCleanupTool home screen with pixel-art drive illustration and capacity cards](docs/screenshots/drive-overview.png)
+![DiskCleanupTool in light mode showing the Windows-style drive list and storage bars](docs/screenshots/drive-overview.png)
 
-*Screenshots show the v0.3.0 interface with sample drive, folder, and S.M.A.R.T. data.*
+*Screenshots show the Windows-style interface with sample drive, folder, and S.M.A.R.T. data.*
+
+The default branch uses Segoe UI and the Windows system icon font (Segoe Fluent Icons on Windows 11 and Segoe MDL2 Assets on Windows 10). Choose **System**, **Light**, or **Dark** in **Settings**. The original pixel interface and its README are available on the [pixel UI branch](https://github.com/letoan9319/DiskCleanupTool/tree/codex/pixel-ui).
 
 ## Download for Windows
 
